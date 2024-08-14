@@ -32,12 +32,14 @@ Validar los datos de entrada para que no te metan cualquier cosa en la base de d
 
 ### Errores:
 Evitar devolver mensajes con demasiada información, porque es muy accesible para los atacantes. Crear errores propios extendiendo de la clase Error.
+
 ![ErrorInstance](./assets/error-instance.PNG)
 
 ## Cors
 Los cors son aplicados en los servidores para las solicitudes http de dominio cruzado que son iniciadas por el navegador, si el server tiene determinado dominio y el cliente(navegador) tiene otro dominio distinto, debemos indicarle al servidor que acepte dicho dominio para poder realizar solicitudes http desde el mismo. En la configuración de los orígenes de cors se pueden aceptar todos los dominios o indicar específicamente cuales queremos que estén permitidos.
 
 ![CorsMiddleware](./assets/cors-middleware.PNG)
+
 Como se ve en el ejemplo, estoy aceptando los dominios http://localhost:5173 y http://www.turns.com.
 
 ## Documentación de API'S
