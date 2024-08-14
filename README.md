@@ -484,6 +484,7 @@ Lenguaje de tipado estricto, mejora a javascript, ya que este es de tipado diná
 3. **Refactorización**.
 
 Se actualiza con la última versión de javascript.
+Importante, Una vez que el código TypeScript se ha compilado en JavaScript, se ejecuta como cualquier otro código JavaScript, ya que TypeScript no añade ningún tipo de verificación en tiempo de ejecución. Todo el tipado de TypeScript se elimina en el proceso de compilación, por lo que en tiempo de ejecución, el código se comporta como JavaScript. Entonces no hay que olvidar de validar entrada de datos de usuarios, ya que typescript no es tan inteligente como para evitar errores de entrada, nada más funciona en compilación.
 Ejemplo de cómo se tipean atributos y métodos en una clase.
 
 ![TypescriptClass](./assets/typescript-class.PNG)
