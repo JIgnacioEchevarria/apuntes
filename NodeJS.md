@@ -10,4 +10,4 @@ Los JWT se dividen en 3 partes:
 - **Payload**: Contiene los datos codificados.
 - **Signature**: Permite decodificar la información del payload.
 
-![JwtGraphic]('./assets/jwt-graphic.PNG)
+![JwtGraphic](./assets/jwt-graphic.PNG)
