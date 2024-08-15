@@ -519,3 +519,39 @@ npm install @types/express
 npm run tsc
 ```
 7. **Recomendado** Instalar linter **ts-standard**
+
+# Conceptos Backend
+## Arquitecturas
+### Monolitos y Microservicios
+#### Arquitectura Monolítica
+- La Aplicación está contenida en un solo modelado de clases
+- Posee una sola lógica de negocio
+- Posee una sola base de datos CENTRALIZADA para toda la aplicación
+- Todo el código fuente de la aplicación se encuentra en un solo proyecto, que se compila en un solo aarchivo ejecutable
+
+###### Ventajas
+- Fácil de desarrollar y mantener
+- No depender de servicios o aplicaciones externas
+
+##### Desventajas
+- Gran complejidad al crecer en gran escala
+- Mayor probabilidad de fallos y cuellos de botella
+
+#### Arquitectura de Microservicos
+- Las partes de la aplicación se subdividen en servicios más pequeños autónomos
+- Cada microservicio tiene su propio modelado, lógica de negocio y base de datos
+- Cada microservicio se comunica con otro a través de APIs
+
+##### Ventajas
+- Si una parte de la aplicación falla, no afecta a las demas.
+- Desarrollo más ágil
+- División de tareas sencilla
+
+##### Desventajas
+- Complejidad que puede alcanzar
+- Se pueden producir fallos de comunicación entre microservicios
+- Requiere mucha m´sa infraestructura
+- A mayor infraestructura tenemos mayor costo
+
+#### ¿Cuál de las dos es mejor?
+Depende de las necesidades que tenga la aplicación, en resumen, para proyectos pequeños es mejor opción un Monolito y para proyectos más grandes utilizar mejor Microservicios
