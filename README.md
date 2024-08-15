@@ -560,6 +560,8 @@ Depende de las necesidades que tenga la aplicación, en resumen, para proyectos 
 Los patrones de diseño son soluciones probadas y reutilizables para resolver problemas comunes que surgen en el desarrollo de software. Se trata de plantillas que identifican problemas en el sistema y proporcionan soluciones apropiadas a problemas generales.
 
 ### Tipos de Patrones de Diseño
-- **Patrones Creacionales**: Se enfocan en la manera en que se crean los objetos. Permiten controlar la creación de objetos, optimizando el rendimiento y la flexibilidad del sistema, como por ejemplo: **Singleton**, **Factory Method**, **Abstract Method**, **Builder**, **Prototype**.
+- **Patrones Creacionales**: Los patrones creacionales proporcionan varios mecanismos de creación de objetos que incrementan la flexibilidad y la reutilización del código existente, como por ejemplo: **Singleton**, **Factory Method**, **Abstract Method**, **Builder**, **Prototype**.
 
-- **Patrones Estructurales**: Se centran en cómo componer clases u objetos para formar estructuras más grandes. Estos patrones ayudan a garantizar que si un sistema crece, su estructura sigue siendo manejable
+- **Patrones Estructurales**: Los patrones estructurales explican cómo ensamblar objetos y clases en estructuras más grandes, a la vez que se mantiene la flexibilidad y eficiencia de estas estructuras, como por ejemplo: **Adapter**, **Composite**, **Proxy**.
+
+- **Patrones de Comportamiento**: Los patrones de comportamiento tratan con algoritmos y la asignación de responsabilidades entre objetos, como por ejemplo: **Iterator**, **Command**, **Observer**, **Strategy**
