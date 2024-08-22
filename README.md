@@ -521,6 +521,32 @@ npm run tsc
 ```
 7. **Recomendado** Instalar linter **ts-standard**
 
+# Spring Boot
+Proyecto del framework Spring de JAVA que simplifica la configuración y el desarrollo de aplicaciones basadas en Spring. Su objetivo principal es hacer que el desarrollo de aplicaciones JAVA se más rápido y sencillo, especialmente para aplicaciones web y microservicios.
+
+## ¿Qué es Spring?
+Es un framework para el desarrollo de aplicaciones y contenedor de inversión de control, de código abierto para JAVA. Hace que la programación en JAVA sea más rápida, fácil y segura para todos. El enfoque de Spring esta en la velocidad, la simplicidad y la productividad.
+
+## Beneficios de utilizar Spring Boot
+1. **Configuración Automática**: Ofrece una configuración automática que ajusta la aplicación a las dependencias y las bibliotecasque hayas incluido. Esto reduce la necesidad de configuraciones manuales y permite que la aplicación arranque con una configuración predeterminada que funciona bien en la mayoría de los casos.
+
+2. **Servidor Incorporado**: Incluye servidores web como Tomcat, Jetty o Undertow, lo que significa que no necesitas desplegar tu aplicación en un servidor externo. Puedes ejecutar tu aplicación como una aplicación JAVA independiente.
+
+3. **Spring Boot Starters**: Proporciona starters, son dependencias preconfiguradas para diversas funcionalidades como seguridad, acceso a datos, y más. Esto fácilita agregar soporte para diferentes funcionalidades de tu aplicación.
+
+4. **Spring Boot Actuator**: Ofrece características de monitoreo y administración para aplicaciones en producción, como métricas, información del estado de la aplicación y la capacidad de realizar cambios de configuración en tiempo real.
+
+5. **Opiniones por Defecto**: Tiene una serie de configuraciones predeterminadas y convenciones que simplifican el desarrollo. Aunque puedes personalizar la configuración, las opciones predeterminadas ayudan a evitar configuraciones complejas.
+
+6. **Soporte para Microservicios**: Es especialmente útil apra construir microservicios debido a su configuración sencilla y su capacidad para ejecutarse de manera independiente.
+
+## Maven
+Apache Maven es una herramienta de gestión de proyectos que se utiliza para gestión de dependencias, como herramienta de compilación e incluso como herramienta de documentación.
+Las dependencias se indican dentro del archivo **pom.xml**, que dentro de el ademas de las dependencias, hay versión de Spring Boot, plugins, perfiles, etc...
+
+### Dependencias útiles
+- **Spring Boot DevTools**: Sirve para no tener que relevantar el servidor cada vez que se hacen cambios en el código.
+
 # Conceptos Backend
 ## Arquitecturas
 ### Monolitos y Microservicios
