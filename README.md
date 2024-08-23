@@ -403,6 +403,11 @@ Instalar las dependencias supertest y vitest. Los test se realizan de la siguien
 - **beforeAll**: Este método se ejecuta una sola vez antes de que comiencen todas las preubas en el bloque describe. Es útil para configurar el entorno de prueba, como inicializar conexiones a bases de datos, crear datos de prueba, o configurar dependencias.
 - **afterAll**: Este método se ejecuta una sola vez después de que todas las pruebas en el bloque describe hayan terminado. Se utiliza para limpiar el entorno de prueba, como cerrar conexiones a bases de datos, eliminar datos de prueba, o liberar otros recursos.
 
+## Producción
+Cuando se lanza una web fullstack a poproducción en Vercel, al estar todo ruteado con React Router Dom, cuando se refresque una pagina esta no sera encontrada, para eso hay una solución, en el cliente crear un json ed esta manera con mismo nombre.
+
+![VercelJSON](./assets/vercel.PNG)
+
 ## Librerías
 ### Calendarios
 React Date Range
