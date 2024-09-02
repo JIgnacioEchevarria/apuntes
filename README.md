@@ -5,6 +5,7 @@ En este repositorio voy a tener todos los apuntes de diferentes tecnologías est
 - [Nodejs](#nodejs)
 - [PostgreSQL](#postgresql)
 - [Typescript](#typescript)
+- [Java](#java)
 - [SpringBoot](#spring-boot)
 - [ConceptosBackend](#conceptos-backend)
 
@@ -527,11 +528,35 @@ npm run tsc
 ```
 7. **Recomendado** Instalar linter **ts-standard**
 
+# Java
+## JDBC
+API de Java para permite conectarse a una base de datos, se puede utilizar con cualquier tipo de base de datos.
+
+### Componentes de JDBC
+- **DriverManager**: Administra una lista de controladores de bases de datos. Se utiliza para estblecer la conexión con la base de datos.
+- **Connection**: Representa una conexión a una base de datos específica.
+- **Statement**: Se utiliza para ejecutar una consulta SQL.
+- **ResultSet**: Contiene los resultados de una consulta SQL.
+- **PreparedStatement**: Similar a Statement pero permite la ejecución de consultas precompiladas y es más eficiente y seguro frente a inyecciones SQL.
+- **CallableStatement**: Se utiliza para jecutar procedimientos almacenados en la base de datos.
+
+## JPA
+Es una API estándar de Java para implementar mapeo objeto-relacional. Para utilizarla se necesita una implementación o proveedor de la misma, como Hibernate, Eclipselink, OpenJPA, etc. JPA se configura a través de metadatos en archivos xml.
+
+Para un proyecto con JPA se necesita:
+- **Driver JDBC + Base de datos**
+- **Proveedor JPA**. Ej: Hibernate.
+- **Archivo de configuración JPA**. (persistence.xml)
+- **Entidades**: Clases Java extendidas con metadatos que describen el mapeo de sus atributos a tablas, se puede mediante:
+    - Archivos de mapeo (entity.xml)-
+    - Anotaciones (@Entity)
+- Código de la aplicación, que manipula las entidades a través de un **EntityManager**.
+
 # Spring Boot
-Proyecto del framework Spring de JAVA que simplifica la configuración y el desarrollo de aplicaciones basadas en Spring. Su objetivo principal es hacer que el desarrollo de aplicaciones JAVA se más rápido y sencillo, especialmente para aplicaciones web y microservicios.
+Extensión del framework Spring de JAVA que simplifica la configuración y el desarrollo de aplicaciones basadas en Spring. Su objetivo principal es hacer que el desarrollo de aplicaciones JAVA se más rápido y sencillo, especialmente para aplicaciones web y microservicios.
 
 ## ¿Qué es Spring?
-Es un framework para el desarrollo de aplicaciones y contenedor de inversión de control, de código abierto para JAVA. Hace que la programación en JAVA sea más rápida, fácil y segura para todos. El enfoque de Spring esta en la velocidad, la simplicidad y la productividad.
+Es un framework para el desarrollo de aplicaciones y contenedor de inversión de control, de código abierto para JAVA. Hace que la programación en JAVA sea más rápida, fácil y segura para todos. El enfoque de Spring esta en la velocidad, la simplicidad y la productividad. Fácilita la configuración y el trabajo con JAVA.
 
 ## Beneficios de utilizar Spring Boot
 1. **Configuración Automática**: Ofrece una configuración automática que ajusta la aplicación a las dependencias y las bibliotecasque hayas incluido. Esto reduce la necesidad de configuraciones manuales y permite que la aplicación arranque con una configuración predeterminada que funciona bien en la mayoría de los casos.
@@ -550,8 +575,132 @@ Es un framework para el desarrollo de aplicaciones y contenedor de inversión de
 Apache Maven es una herramienta de gestión de proyectos que se utiliza para gestión de dependencias, como herramienta de compilación e incluso como herramienta de documentación.
 Las dependencias se indican dentro del archivo **pom.xml**, que dentro de el ademas de las dependencias, hay versión de Spring Boot, plugins, perfiles, etc...
 
-### Dependencias útiles
+## Dependencias útiles
 - **Spring Boot DevTools**: Sirve para no tener que relevantar el servidor cada vez que se hacen cambios en el código.
+- **Spring Web**: La dependencia más importante para crear una API.
+
+## Sintaxis Spring Boot API
+
+### Controller
+Es un componente clave de la aplicación que se encarga de manejar las solicitudes HTTP y devolver las respuestas adecuadas. Gestiona la lógica de presentación y coordina el flujo de los datos entre el modelo (entidades y servicios) y la vista (Frontend).
+
+#### Ejemplo
+```java
+package com.jie.firstapi.controller;
+
+import com.jie.firstapi.entity.Person;
+import org.springframework.web.ErrorResponseException;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1") // Path para que todas los endPoints del controlador comienzen con el mismo Path.
+public class UsersController {
+    private List<Person> users;
+
+    public UsersController() {
+        this.users = new ArrayList<>();
+    }
+
+    @GetMapping("/")
+    public List<Person> getUsers() {
+        return users;
+    }
+
+    @GetMapping("/{id}")
+    public Person getUserById(@PathVariable("id") int idUser) {
+        if (
+            idUser > this.users.size() ||
+            this.users.get(idUser) == null
+        ) {
+            throw new Error("Not Found");
+        }
+
+        return this.users.get(idUser - 1);
+    }
+
+    @PostMapping("/")
+    public void addUser(@RequestBody Person user) {
+        this.users.add(user);
+    }
+}
+```
+
+### Verbos, Parametros y Cuerpos de Consultas
+
+#### Verbos
+
+Los diferentes verbos se escriben todos de la misma forma, @ seguido del verbo comenzando en mayuscula, seguido de Mapping y dentro de los parentesis el path: **@VerboMapping("/path")**
+
+Por ejemplo:
+
+**GET**: @GetMapping("/")
+
+**POST**: @PostMapping("/")
+
+**ETC...**
+
+#### Parametros
+**PathVariable**: Utilizado para extraer valores de la URL que forman parte del propio camino. Por ejemplo:
+
+```bash
+http://localhost:8080/api/v1/users/123
+```
+Aca 123 es un valor que forma parte del camino de la URL y podría representar el ID de un usuario. Se utiliza @PathVariable para extraer este valor:
+
+```java
+@RestController
+public class UserController {
+    @GetMapping("/api/users/{id}")
+    public String getUserById(@PathVariable("id") String userId) {
+        return "User ID is " + userId;
+    }
+}
+```
+
+Luego de indicar PathVariable se indica al tipo de dato que se convertira este parametro, como String, int, boolean, etc...
+
+Dentro de los parentesis en PathVariable se pueden indicar diferentes cosas:
+
+- value: nombre del parametro.
+- required: indica si es requerido (por defecto en true).
+- defaultValue: valor por defecto en caso de que no se proporcione nada.
+
+**RequestParam**: Utilizado para extraer valores de los parametros de consulta en una URL. Estos parametros se envian en la cadena de la consulta despues del signo ? y estan separados por &. Por ejemplo:
+
+```bash
+http://localhost:8080/api/v1/users?page=2&size=10
+```
+
+page y size son parametros de la query, generalmente son utiilizados para indicar filtros opcionales.
+
+```java
+@RestController
+@RequestMapping("/api/v1/users")
+public class UserController {
+
+    @GetMapping("/")
+    public ResponseEntity<List<User>> getUsers(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size) {
+        // Aquí 'page' tomará el valor '2' y 'size' tomará el valor '10' de la URL
+        List<User> users = userService.getUsers(page, size);
+        return ResponseEntity.ok(users);
+    }
+}
+```
+
+Luego de indicar RequestParam se indica al tipo de dato que se convertira este parametro, como String, int, boolean, etc...
+
+Dentro de los parentesis en RequestParam se pueden indicar diferentes cosas:
+
+- value: nombre del parametro.
+- required: indica si es requerido (por defecto en true).
+- defaultValue: valor por defecto en caso de que no se proporcione nada.
+
+
 
 # Conceptos Backend
 ## Arquitecturas
@@ -598,3 +747,22 @@ Los patrones de diseño son soluciones probadas y reutilizables para resolver pr
 - **Patrones Estructurales**: Los patrones estructurales explican cómo ensamblar objetos y clases en estructuras más grandes, a la vez que se mantiene la flexibilidad y eficiencia de estas estructuras, como por ejemplo: **Adapter**, **Composite**, **Proxy**.
 
 - **Patrones de Comportamiento**: Los patrones de comportamiento tratan con algoritmos y la asignación de responsabilidades entre objetos, como por ejemplo: **Iterator**, **Command**, **Observer**, **Strategy**
+
+## API
+Application Programming Interface, es el punto de interconexión entre dos partes, por ejemplo si se quiere conectar un Frontend con React y un Backend con Spring Boot, se comunican a travez de una API, que utiliza un lenguaje universal para transmitir datos.
+
+### API REST
+Es un tipo de servicio que se caracteriza por no tener estado y por lograr interconexiones mediante el protocolo http con mensajes de tipo XML o JSON.
+
+#### Características clave de una API REST:
+- **Cliente-Servidor**: El modelo REST separa las responsabilidades entre el cliente, que realiza las solicitudes, y el servidor, que maneja y responde a esas solicitudes. Esto permite que ambos evolucionen de manera independiente.
+
+- **Stateless (Sin Estado)**: Cada solicitud de cliente a servidor debe contener toda la información necesaria para que el servidor entienda y procese la solicitud. El servidor no guarda estado entre las solicitudes, lo que hace que cada petición sea independiente.
+
+- **Cacheable**: Las respuestas de las solicitudes pueden ser cacheadas por el cliente o por intermediarios (como proxies), lo que puede mejorar la eficiencia al reducir el número de solicitudes que se envían al servidor.
+
+- **Interfaz uniforme**: REST utiliza métodos HTTP estándar (como GET, POST, PUT, DELETE) para interactuar con los recursos, lo que permite una manipulación consistente y predecible de los datos.
+
+- **Uso de Recursos**: En REST, se considera a todo un recurso, que es una entidad de datos o un objeto, identificada por una URL única. Por ejemplo, un recurso podría ser un "usuario" en un sistema, y se accedería a él a través de una URL como /usuarios/{id}.
+
+- **Representaciones**: Los recursos pueden ser representados en diferentes formatos, como JSON o XML. El cliente y el servidor pueden negociar el formato que prefieren para enviar y recibir datos.
