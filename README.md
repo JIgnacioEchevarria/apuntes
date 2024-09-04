@@ -766,3 +766,42 @@ Es un tipo de servicio que se caracteriza por no tener estado y por lograr inter
 - **Uso de Recursos**: En REST, se considera a todo un recurso, que es una entidad de datos o un objeto, identificada por una URL única. Por ejemplo, un recurso podría ser un "usuario" en un sistema, y se accedería a él a través de una URL como /usuarios/{id}.
 
 - **Representaciones**: Los recursos pueden ser representados en diferentes formatos, como JSON o XML. El cliente y el servidor pueden negociar el formato que prefieren para enviar y recibir datos.
+
+# Bases de Datos
+## Bases de Datos NoSql
+### REDIS
+Almacén de datos clave-valor en memoria, de código abierto y rápido. Ofrece tiempos de respuesta inferiores al milisegundo, lo que permite que se realicen millones de solicitudes por segundo para aplicaciones en tiempo real de la industria. Redis es muy utilizado en aplicaciones de almacenamiento en caché, administración de sesiones, videojuegos, tablas de clasificación, análisis en tiempo real, datos geoespaciales, servicios de vehículos compartidos, chats, streaming de contenido multimedia y publicación/suscripción.
+
+#### Motores en memoria
+El almacenamiento en memoria caché ofrece un mayor rendimiento en la recuperación de datos y una reducción de los costos de escalabilidad.
+
+#### Almacenamiento en Caché
+Se puede utilizar para reducir la latencia y mejorar las IOPS de muchas cargas de trabajo de aplicaciones de alto nivel de lectura, como portales de preguntas y respuesteas, videojuegos, uso compartido de contenido y redes sociales.
+
+#### Beneficios de REDIS
+- **Rendimiento**: Todos los datos de REDIS residen en memoria, lo que permite un acceso a datos de baja latencia y alto rendimiento. Los almacenes de datos en memoria no requieren un viaje al disco, lo que reduce la latencia del motor.
+
+- **Estructuras de datos flexibles**: Cuenta con una amplia variedad de estructuras de datos para satisfacer los requisitos de sus aplicaciones. Los distintos tipos de datos de REDIS son:
+    - **Cadenas**: Datos de texto o binarios de hasta 512 MB de tamaño.
+    - **Listas**: Una colección de cadenas en el orden en que se agregaron.
+    - **Conjuntos**: Una colección desordenada de cadenas con la capacidad para intercalarse, unirse y diferenciarse de otros tipos de conjuntos.
+    - **Conjuntos ordenados**: Conjuntos ordenados por un valor.
+    - **Hashes**: Una estructura de datos para almacenar una lista de campos y valores.
+    - **Mapas de bits**: Un tipo de datos que ofrece operaciones a nivel de bits.
+    - **HyperLogLogs**: Una estructura de datos probabilísticos para estimar los elementos únicos en un conjunto de datos.
+    - **Secuencias**: Una cola de mensajes de estructura de datos de registro.
+    - **Geoespacial**: Mapas de entradas basados en longitud / latitud, "cercanía".
+    - **JSON**: Un objeto anidado y semiestructurado de valores con nombre que admite números, cadenas, booleanos, matrices y otros objetos.
+- **Simplicidad y facilidad de uso**: REDIS permite escribir códio complejo con menos línea y más simples.
+- **Replicación y persistencia**: REDIS utiliza una arquitectura con servidor principal y réplica y admite la replicación asíncrona en la que los datos se replican en numerosos servidores de réplicas. Se logra un mejor nivel de rendimiento de lectura, ya que las solicitudes de pueden repartir en varios servidores, y menores tiempos de recuperación cuando el servidor principal sufre un corte. REDIS admite copias de seguridad puntuales para persistencia (Copia el conjunto de datos REDIS en el disco).
+- **Alto nivel de disponibilidad y escalabilidad**: Ofrece una arquitectura con servidor principal y réplica en una topología en clústeres o principal con un único nodo. Esto permite crear soluciones con un alto nivel de disponibilidad, lo que ofrece fiabilidad y rendimiento estables. Cuando se necesita ajustar el tamaño de un clúster, se encuentran disponibles diferentes opciones de escalado. Esto permite que el tamaño del clúster se ajuste a sus necesidades.
+
+#### Usos de REDIS
+- Es una excelente opción para implementar una caché en memoria de alta disponibilidad a fin de reducir los tiempos de latencia. Algunos ejemplos:
+    - Chat, mensajería y colas.
+    - Tablas de clasificación de videojuegos.
+- Resguardo de sesiones.
+- Streaming completo de contenido multimedia.
+- Análisis geoespacial.
+- Machine Learning (ChatGPT).
+- Análisis en tiempo real.
