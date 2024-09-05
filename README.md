@@ -806,3 +806,10 @@ Se puede utilizar para reducir la latencia y mejorar las IOPS de muchas cargas d
 - Análisis geoespacial.
 - Machine Learning (ChatGPT).
 - Análisis en tiempo real.
+
+# POO - Programación Orientada a Objetos
+## Abstracción
+## Encapsulamiento
+## Polimorfismo
+## Herencia
+## UML
