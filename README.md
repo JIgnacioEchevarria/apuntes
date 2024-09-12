@@ -553,6 +553,254 @@ Para un proyecto con JPA se necesita:
     - Anotaciones (@Entity)
 - Código de la aplicación, que manipula las entidades a través de un **EntityManager**.
 
+### Anotaciones JPA
+#### Entidades
+En JPA se tiene que indicar que una clase es una entidad de la siguiente manera, luego JPA se encarga de mapearla para convertirla en una tabla en la base de datos.
+```java
+@Entity // Anotacion para indicar que es una entidad
+@Table(name = "person") // Nombre de la tabla
+public class Person {
+    // Atributos y métodos
+}
+```
+
+#### Atributos de entidades
+Las anotaciones de atributos se indican encima del atributo que se quiere anotar.
+```java
+@Entity
+@Table(name = "person")
+public class Person {
+    @Id // Indica que el atributo es el iidentificador único de la entidad.
+    private int id;
+
+    @Column(nullable = false) // Indica que es una columna que no puede ser nula.
+    private String name;
+
+    @Column(name = "email_address") // Indica que es una columna y le indica el nombre.
+    private String email;
+
+    private int age; // Cuando no hay nada adicional que indicar (nombre, not null, etc...) no hace falta indicar la anotacion @Column
+}
+```
+
+##### IDS Autoincrementales
+```java
+@Entity
+@Table(name = "person")
+public class Person {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+}
+```
+
+#### Anotaciones en Clases Abstractas
+```java
+@Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "role")
+public abstract class Person {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
+    private String name;
+}
+
+@Entity
+@DiscriminatorValue("employee")
+public class Employee extends Person {
+    // Atributos y métodos
+}
+
+@Entity
+@DiscriminatorValue("client")
+public class Client extends Person {
+    // Atributos y métodos
+}
+```
+
+### Relaciones entre entidades
+- **Navegaciones de las relaciones**: Representa la visibilidad entre los objetos.
+    - **Unidireccionales**: Reflejan un objeto que tiene una referencia a otro objeto.
+    - **Bidireccionales**: Representan dos objetos que mantienen referencias al objeto contrario.
+- **Multiplicidad**: La multiplicidad de un asociación determina cuantos objetos de cada tipo intervienen en la asociación.
+    - **Uno a uno**
+    - **Uno a muchos**
+    - **Muchos a muchos**
+
+### Anotaciones en JPA para las asociaciones
+- @ManyToOne
+- @OneToMany
+- @OneToOne
+- @ManyToMany
+
+### Ejemplos de Relaciones
+- Relación entre Empleado y Departamento, es una relación de uno(Departamento) a muchos(Empleado).
+
+#### ManyToOne unidireccional
+```java
+@Entity
+public class Empleado {
+    @Id
+    private int id;
+    private String nombre;
+
+    @ManyToOne // Referencia a Departamento con un atributo del tipo Departamento
+    @JoinColumn(name = "id_departamento") // Indica el nombre de la columna de la fk.
+    private Departamento departamento;
+}
+
+@Entity
+public class Departamento {
+    @Id
+    private int id;
+    private String nombre;
+}
+```
+
+#### OneToMany unidireccional
+```java
+@Entity
+public class Departamento {
+    @Id
+    private int id;
+    private String nombre;
+
+    @OneToMany(fetch = FetchType.LAZY) // Referencia a empleado con una lista de los empleados que estan en ese departamento
+    private List<Empleado> listaEmpleados;
+}
+
+@Entity
+public class Empleado {
+    @Id
+    private int id;
+    private String nombre;
+}
+```
+
+#### OneToMany y ManyToOne bidireccional
+Ambos mantienen la referencia al otro, identicas a los ejemplos anteriores.
+```java
+@Entity
+@Table(name = "departamento")
+public class Departamento {
+    @Id
+    private int id;
+    private String nombre;
+
+    @OneToMany(mappedBy = "departamento", fetch = FetchType.LAZY) // En mappedBy va el nombre que se le pone a la referencia en el otro objeto(Empleado)
+    private List listaEmpleado; // Referencia a Empleado
+}
+
+@Entity
+public class Empleado {
+    @Id
+    private int id;
+    private String nombre;
+
+    @ManyToOne
+    @JoinColumn(name = "id_departamento")
+    private Departamento departamento; // Referencia a Departamento
+}
+```
+
+### OneToOne unidireccional
+- Marido es dueño de la relación, ya que tiene la FK, en la BD la tabla Marido tendra una columna que representa la relación con mujer (FK).
+
+```java
+@Entity
+public class Marido {
+    @Id
+    private int id;
+
+    @OneToOne
+    private Mujer mujer;
+}
+
+@Entity
+public class Mujer {
+    @Id
+    private int id;
+}
+```
+
+### OneToOne bidireccional
+- Ambos mantienen una referencia
+- El dueño de la relación se especifica explicitamente
+- Uno de ellos tiene que indicar que la parte contraria es la dueña de la relacion con el mappedBy
+
+```java
+@Entity
+public class Mujer {
+    @Id
+    private int id;
+
+    @OneToOne
+    private Marido marido;
+}
+
+@Entity
+public class Marido {
+    @Id
+    private int id;
+
+    @OneToOne(mappedBy = "marido") // Indica que mujer es dueñad de la relación, se indica el nombre del atributo de la referencia en el objeto Mujer.
+    private Mujer mujer;
+}
+```
+
+### ManyToMany unidireccional
+```java
+@Entity
+public class Alumno {
+    @Id
+    private int id;
+    private String nombre;
+
+    @ManyToMany
+    private List<Profesor> profesores;
+}
+
+@Entity
+public class Profesor {
+    @Id
+    private int id;
+    private String nombre;
+}
+```
+
+### ManyToMany bidireccional
+```java
+@Entity
+public class Alumno {
+    @Id
+    private int id;
+    private String nombre;
+
+    @ManyToMany(mappedBy = "alumnos") // Indica que Profesor es el dueño de la relación, con el mappedBy alumnos (atributo de Profesor)
+    private List<Profesor> profesores;
+}
+
+@Entity
+public class Profesor {
+    @Id
+    private int id;
+    private String nombre;
+
+    @ManyToMany
+    private List<Alumno> alumnos;
+}
+```
+
+### Propiedades de las anotaciones de Asociación
+- **targetEntity**: Para especificar el tipo (clase) de la entidad a la que hace referencia. Por defecto infiere el tipo.
+- **cascade**: Para especificar que las operaciones de persistencia pueden abarcar tambien a las referencias. Por defecto es vacío.
+- **fetch**: Para especificar el tipo de lectura de la referencia.
+    - **EAGER**: La lista de la referencia se carga de inmediato cuando se carga la entidad. JPA realiza una consulta adicional a la base de datos para cargar la entidad relacionada al mismo tiempo que la entidad principal. Esto significa que se obtienen todos los datos relacionados de una vez.
+    - **LAZY**: La asociación no se carga automáticamente, se carga solo cuando se accede a ella por primera vez. utilizado para mejorar el rendimiento, no carga los datos hasta que realmente se los necesite. Se la inicializa accediendo a la lista con .size(), .filter(), etc...
+- **mappedBy**: Para especificar el dueño de la relacion en las asociaciones bidireccionales (ManyToOne no tiene esta propiedad)
+
 # Spring Boot
 Extensión del framework Spring de JAVA que simplifica la configuración y el desarrollo de aplicaciones basadas en Spring. Su objetivo principal es hacer que el desarrollo de aplicaciones JAVA se más rápido y sencillo, especialmente para aplicaciones web y microservicios.
 
