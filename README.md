@@ -801,6 +801,113 @@ public class Profesor {
     - **LAZY**: La asociación no se carga automáticamente, se carga solo cuando se accede a ella por primera vez. utilizado para mejorar el rendimiento, no carga los datos hasta que realmente se los necesite. Se la inicializa accediendo a la lista con .size(), .filter(), etc...
 - **mappedBy**: Para especificar el dueño de la relacion en las asociaciones bidireccionales (ManyToOne no tiene esta propiedad)
 
+## JPQL
+- Lenguaje de consulta de persistencia en JAVA (JPA).
+- Lenguaje muy parecido a SQL.
+- No se consultan tablas, se consultan la entidades con sus determinados atributos.
+- JPA se encarga de mapear estas consultas a las entidades para que lleguen a las determinadas tablas de las BD.
+
+### Consultas JPQL
+- Permite operaciones de lectura (SELECT), actualización (UPDATE) y borrado (DELETE).
+- Tiene funciones agregadas como AVG, COUNT, MAX, MIN, SUM.
+- Permite operadores lógicos como en SQL.
+- Permite la clausula WHERE.
+- Siempre se pone un alias para las entidades
+    - SELECT p FROM Persona p
+
+### Ejemplos de consultas
+- SELECT p FROM Pelicula p (p es un alias para luego recuperar sus atributos, ej. p.titulo, igual que en SQL)
+- SELECT p FROM Pelicula p WHERE p.duracion < 120
+- SELECT p FROM Pelicula p WHERE p.duration BETWEEN 90 AND 150
+- UPDATE Articulo a SET a.descuento = 15
+- DELETE FROM Pelicula p WHERE p.duracion > 190
+- SELECT COUNT(*) FROM Pelicula p
+
+### Consultas con entidades relacionadas
+#### Lista como referencia
+```sql
+SELECT c FROM Cliente c JOIN c.ordenes o
+WHERE c.estado = 1 AND o.precioTotal > 10000;
+```
+
+Identifica un solo miembro de la colección, no se puede hacer c.ordenes.estado
+```sql
+SELECT c FROM Cliente c, IN(c.ordenes) o
+WHERE c.estado = 1 AND o.precioTotal > 10000;
+```
+
+Relaciones múltiples
+```sql
+SELECT e FROM Equipo e, IN(e.jugadores) j
+WHERE j.direccion.ciudad = :ciudad;
+```
+
+#### Referencia simple
+```sql
+SELECT c FROM Cliente c JOIN c.direccion d
+WHERE d.calle = ‘calle1’
+```
+
+### Consultas con parámetros
+#### Parámetros con nombre
+Se usa ":", luego del objetoQuery se usa setParameter()
+```java
+em.createQuery("SELECT c FROM Customer c WHERE c.name LIKE :custName")
+    .setParameter("custName", name)
+    .getResultList();
+```
+
+Se usa "?#", donde # es la posición del parámetro en la consulta
+```java
+em.createQuery("SELECT c FROM Customer c WHERE c.name LIKE ?1")
+    .setParameter(1, name)
+    .getResultList();
+```
+
+### Tipos de consultas
+#### createQuery
+- getResultList() retorna un objeto List con todas las entidades devueltas por la sentencia JPQL.
+- Sentencia dinámica, es generada cada vez que se ejecuta.
+```java
+em.createQuery("SELECT c FROM Customer c WHERE c.name LIKE ?1")
+    .setParameter(1, name)
+    .getResultList();
+```
+
+#### createNamedQuery
+- Son leídos y transformados en sentencias SQL cuando el programa arranca por primera vez.
+- Son definidas mediante metadatos (anotación @NamedQuery).
+```java
+@Entity
+@NamedQuery(name = Alumno.BUSCAR_TODOS, query = "SELECT a FROM Alumno a")
+public class Alumno {
+    public static final String BUSCAR_TODOS = "Alumno.buscarTodos";
+}
+
+public static void main(String[] args) {
+    Query query = em.createNamedQuery(Alumno.BUSCAR_TODOS);
+    List<Alumno> resultados = query.getResultList();
+}
+```
+
+#### createNativeQuery
+- Sentencia SQL nativa.
+- Se consulta sobre tablas.
+```java
+em.createNativeQuery("SELECT * FROM profesor", Profesor.class)
+```
+
+#### Typed Query
+- Es JPQL.
+- Cuando se conoce el tipo de retorno.
+```java
+public UserEntity getUserByIdWithTypedQuery(Long id) {
+    TypedQuery<UserEntity> typedQuery = getEntityManager() .createQuery("SELECT u FROM UserEntity u WHERE u.id=:id",UserEntity.class);
+    typedQuery.setParameter("id", id);
+    return typedQuery.getSingleResult();
+}
+```
+
 # Spring Boot
 Extensión del framework Spring de JAVA que simplifica la configuración y el desarrollo de aplicaciones basadas en Spring. Su objetivo principal es hacer que el desarrollo de aplicaciones JAVA se más rápido y sencillo, especialmente para aplicaciones web y microservicios.
 
