@@ -1056,6 +1056,12 @@ Dentro de los parentesis en RequestParam se pueden indicar diferentes cosas:
 - required: indica si es requerido (por defecto en true).
 - defaultValue: valor por defecto en caso de que no se proporcione nada.
 
+## Arquitectura de una App SpringBoot
+- **RestController**: Capa que se encarga de presentar nuestra API REST, convirtiendo Json a POJO y vice-versa.
+- **Service**: Capa que implementa la lógica del negocio, abstrae de la presentación.
+- **JPARepository**: Capa que define las operaciones que se pueden hacer con la base de datos.
+- **DataBase**: Capa que se encarga de la persistencia.
+
 
 
 # Conceptos Backend
