@@ -793,6 +793,79 @@ public class Profesor {
 }
 ```
 
+### ManyToMany con columnas adicionales
+En una relación ManyToMany JPA la tabla solo tendra el ID de cada entidad, pero que pasa si yo ademas le quiero agregar un atributo adicional, JPA no tiene una anotacion para esto, entonces hay que cambiar las relaciones y agregar una entidad intermedia.
+
+Por ejemplo, supongamos el caso de tener una entidad Estudiante y otra Carrera, con una relación ManyToMany, ya que un estudiante puede estar inscripto en una o muchas carreras y una carrera puede tener uno o más estudiantes, pero ademas queremos agregar los años que el estudiante lleva cursando esa carrera, ahi viene el problema, tenemos que agregar un atributo adicional. Lo que se hace es lo siguiente:
+
+#### Paso 1
+Crear una clase para la primary key compuesta de la tabla intermedia, la cual tendra el id del estudiante y el id de la carrera, esta clase tiene que implementar Serializable y llevar la anotación **@Embeddable** utilizada para definir una clave compuesta.
+```java
+@Embeddable
+public class EstudianteCarreraId implements Serializable {
+    private int estudianteId;
+    private int carreraId;
+
+    public EstudianteCarreraId(int estudianteId, int carreraId) {
+        this.estudianteId = estudianteId;
+        this.carreraId = carreraId;
+    }
+
+    // Getters y Setters
+}
+```
+
+#### Paso 2
+Luego necesitamos crear una clase que represente la relación ManyToMany entre ambas entidades, la cual se llamara EstudianteCarrera
+```java
+@Entity
+@Table(name = "estudiante_carrera")
+public class EstudianteCarrera {
+    @EmbeddedId // Indica que la clave es compuesta
+    private EstudianteCarreaId id;
+
+    @ManyToOne // Relacion con Estudiante
+    @MapsId("estudianteId") // Nombre del atributo en la clase EstudianteCarreraId
+    @JoinColumn(name = "estudiante_id")
+    private Estudiante estudiante;
+
+    @ManyToOne // Relacion con Carrera
+    @MapsId("carreraId") // Nombre del atributo en la clase EstudianteCarreraId
+    @JoinColumn(name = "carrera_id")
+    private Carrera carrera;
+
+    @Column(name = "anios_antiguedad")
+    private int aniosAntiguedad; // Atributo adicional
+
+    public EstudianteCarrera(Estudiante estudiante, Carrera carrera, int aniosAntiguedad) {
+        this.id = new EstudianteCarreraId(estudiante.getId(), carrera.getId());
+        this.estudiante = estudiante;
+        this.carrera = carrera;
+        this.aniosAntiguedad = aniosAntiguedad;
+    }
+}
+```
+
+#### Paso 3
+Por último debemos anotar una relación OneToMany tanto en la clase Estudiante como en la clase Carrera
+```java
+@Entity
+@Table(name = "estudiante")
+public class Estudiante {
+    // ...
+    @OneToMany(mappedBy = "estudiante") // Nombre del atributo en EstudianteCarrera
+    private List<EstudianteCarrera> carreras;
+}
+
+@Entity
+@Table(name = "carrera")
+public class Carrera {
+    // ...
+    @OneToMany(mappedBy = "carrera") // Nombre del atributo en EstudianteCarrera
+    private List<EstudianteCarrera> estudiantes;
+}
+```
+
 ### Propiedades de las anotaciones de Asociación
 - **targetEntity**: Para especificar el tipo (clase) de la entidad a la que hace referencia. Por defecto infiere el tipo.
 - **cascade**: Para especificar que las operaciones de persistencia pueden abarcar tambien a las referencias. Por defecto es vacío.
