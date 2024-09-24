@@ -9,6 +9,7 @@ En este repositorio voy a tener todos los apuntes de diferentes tecnologías est
 - [SpringBoot](#spring-boot)
 - [ConceptosBackend](#conceptos-backend)
 - [BasesDeDatos](#bases-de-datos)
+- [POO](#poo---programación-orientada-a-objetos)
 
 # NodeJS
 
@@ -1242,8 +1243,187 @@ Se puede utilizar para reducir la latencia y mejorar las IOPS de muchas cargas d
 - Análisis en tiempo real.
 
 # POO - Programación Orientada a Objetos
-## Abstracción
 ## Encapsulamiento
-## Polimorfismo
+Significa reunir todos los elementos que pueden considerarse pertenecientes a una misma entidad, al mismo nivel de abstracción. Permite tres niveles de acceso:
+
+- **PUBLIC (Público)**.
+    - El método, constructor o atributo que tenga **public** podra ser accedido por cualquier otra clase.
+- **PRIVATE (Privado)**.
+    - El método, constructor o atributo que tenga **private** no podra ser accedido por otras clases.
+    - Generalmente los atributos van con private para que no puedan ser manipulados, obligando así a utilizar los getters y setters de la clase.
+- **PROTECTED (Protegido)**.
+    - El método, constructor o atributo que tenga **protected** solo podra ser accedido por las clases hijas.
 ## Herencia
+- Hay clases que comparten gran parte de sus características.
+- El mecanismo conocido con el nombre de herencia permite reutilizar clases; Se crea una nueva clase que extiende la funcionalidad de una clase existente sin tener que reescribir el código asociado a esta última.
+- La nueva clase, a la que se denomina **subclase**, puede poseer atributos y métodos que no existan en la clase original.
+- Los objetos de la nueva clase heredan los atributos y los métodos de la clase original, que se denomina **superclase**.
+
+![herencia](./assets/herencia.PNG)
+
+**Persona** es una clase genérica que sirve para almacenar datos en común de todas las persona como el nombre, la dirección, el número de teléfono, etc...
+
+**Empleado** hereda estos mismos atributos de la clase Persona, pero puede incluir atributos propios, como por ejemplo, num de legajo, puesto, cargo, etc...
+
+**Consultor** también hereda los mismos atributos en común de la clase Persona, mientras que puede incluir otros atributos propios, como empresa Consultora, id de consultor, etc...
+
+### Ejemplo
+```java
+public class Persona {
+    int id;
+    String dni;
+    String nombre;
+
+    // Contructor, getters y setters.
+}
+
+public class Empleado extends Persona {
+    int numLegajo;
+    String cargo;
+    Double sueldo;
+
+    public Empleado() {}
+
+    public Empleado(int numLegajo, String cargo, Double sueldo, int id, String dni, String nombre) {
+        // Llama al constructor de la clase padre, para instanciar los atributos
+        // propios de la clase Persona
+        super(id, dni, nombre);
+        this.numLegajo = numLegajo;
+        this.cargo = cargo;
+        this.sueldo = sueldo;
+    }
+}
+
+public class Consultor extends Persona {
+    String nombreConsultora;
+    int numConsultor;
+
+    public Consultor() {}
+
+    public Consultor(String nombreConsultora, int numConsultor, int id, String dni, String nombre) {
+        // Llama al constructor de la clase padre, para instanciar los atributos
+        // propios de la clase Persona
+        super(id, dni, nombre);
+        this.nombreConsultora = nombreConsultora;
+        this.numConsultor = numConsultor;
+    }
+}
+
+public class Herencia {
+    public static void main(String[] args) {
+        Empleado empleado = new Empleado();
+
+        // Puedo pedirle el metodo getNombre() que aunque no lo
+        // defina la clase Empleado, lo hereda de la clase Persona.
+        empleado.getNombre();
+    }
+}
+```
+
+## Polimorfismo
+- Muchas formas.
+- A partir de un objeto que pertenece a una clase madre, puedo tener objetos creados con clases hijas, estas clases hijas al tener padre en común pueden ser consideradas como si tuviesen la forma de un solo objeto.
+![polimorfismo](./assets/polimorfismo.PNG)
+
+Las clases Coche, Moto y Bus van a compartir atributos y métodos entre si, lo que permite que sean consideradas como un objeto de tipo Vehiculo, ya que compraten el mismo padre. Por ejemplo la clase Vehiculo puede tener un método **estacionar(Vehiculo vehiculo)** que recibe un objeto de tipo Vehiculo como parametro, entonces puede recibir tanto un objeto de tipo Coche, Moto o Bus.
+
+### Ejemplo con un Array
+```java
+public class Persona {}
+
+// Las clases que extienden de Persona
+// compartiran atributos y métodos de la clase Persona
+public class Empleado extends Persona {}
+public class Consultor extends Persona {}
+public class Jefe extends Persona {}
+
+public class Polimorfismo {
+    public static void main(String[] args) {
+        // Al ser aun array que guarda objetos de tipo Persona
+        // voy a poder guardar cualquier objeto que extienda
+        // de la clase Persona
+        Persona array [] = new Persona [5];
+        array [0] = new Persona();
+        array [1] = new Empleado();
+        array [2] = new Consultor();
+        array [3] = new Jefe();
+
+        // O tambien puedo a un objeto persona cambiarlo por
+        // un objeto empleado por ejemplo
+        Persona persona = new Persona();
+        Empleado empleado = new Empleado();
+        persona = empleado;
+    }
+}
+```
+
+## Abstracción
+### Clases Abstractas
+- Son una clase cuya principal característica es que no pueden ser instanciadas.
+- Los constructores de la clase solo podran ser utilizados por sus clases hijas.
+- Puede tener tanto métodos abstractos como no asbtractos. Un método abstracto es un método que no puede implementar la clase por si sola, lo deben hacer las clases que extiendan de ella (es decir que declara el método vacío y sus hijos deben implementarlo).
+- Al menos uno de sus métodos debe ser abstracto.
+- Cuando se usan clases abstractas, una clase no puede heredar de varias clases abstractas a la vez (como en el caso de las interfaces).
+
+### ¿Cuando utilizar abstracción?
+Cuando deseamos definir una clase abstracta que englobe objetos de distintos tipos y queremos hacer uso del **polimorfismo**.
+
+### Ejemplo
+- Figura es una clase abstracta porque no tiene sentido calcular su área, pero sí la de sus hijos (cuadrado o círculo).
+- Si una subclase de Figura no redefine el método calcularArea(), deberá declararse también como clase abstracta.
+
+```java
+// La clase abstracta.
+public abstract class Figura {
+    protected double x;
+    protected double y;
+
+    protected Figura() {}
+
+    // Protected para que solo sus clases hijas
+    // puedan utilizarlo
+    protected Figura(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    // Se declara el método asbtracto sin abrir y cerrar llaves.
+    public abstract double calcularArea();
+}
+
+public class Circulo extends Figura {
+    private double radio;
+
+    public Circulo() {}
+
+    public Circulo(double radio, double x, double y) {
+        super(x, y);
+        this.radio = radio;
+    }
+
+    @Override // @Override --> sobreescritura
+    public double calcularArea() {
+        double pi = 3.14;
+        resultado = pi * radio * radio;
+        return resultado;
+    }
+}
+
+public class Cuadrado extends Figura {
+    private double lado;
+
+    public Cuadrado() {}
+
+    public Cuadrado(double lado, double x, double y) {
+        super(x, y);
+        this.lado = lado;
+    }
+
+    @Override // @Override --> sobreescritura
+    public double calcularArea() {
+        double resultado = lado * lado;
+        return resultado;
+    }
+}
+```
 ## UML
