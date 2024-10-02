@@ -1136,6 +1136,463 @@ Dentro de los parentesis en RequestParam se pueden indicar diferentes cosas:
 - **JPARepository**: Capa que define las operaciones que se pueden hacer con la base de datos.
 - **DataBase**: Capa que se encarga de la persistencia.
 
+## Anotaciones SpringBoot
+### @Autowired
+Se aplica a campos, métodos de setters y constructores. La anotación @Autowired hace inyección de dependencia.
+```java
+public class TournamentService {
+    @Autowired
+    private Repository<Tournament> tournamentRepository;
+}
+```
+### @Configuration
+Se utiliza para marcar una clase como una clase de configuración que define uno o más Beans (@Repoitory, @Component, @Entity, @Service, etc...) que seran gestionados por el contenedor de Spring. Los beans definidos en una clase @Configuration son Singletons por defecto, Spring garantiza que solo una instancia del Bean será creada y compartida.
+```java
+public class Motor {
+    private String tipo;
+
+    public Motor(String tipo) {
+        this.tipo = tipo;
+    }
+
+    public String getTipo() {
+        return tipo;
+    }
+}
+
+public class Coche {
+    private Motor motor;
+
+    public Coche(Motor motor) {
+        this.motor = motor;
+    }
+
+    public void encender() {
+        System.out.println("Coche encendido con motor: " + motor.getTipo());
+    }
+}
+
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class AppConfig {
+    @Bean
+    public Motor motor() {
+        return new Motor("V8");
+    }
+
+    @Bean
+    public Coche coche() {
+        return new Coche(motor());
+    }
+}
+```
+
+### @Bean
+Se utiliza para los métodos de las clases @Configuration, los métodos para crear instancias de @Configuration tienen que ser anotados con @Bean.
+
+### @Value
+Utilizado en los niveles de campo, parámetro de constructor y parámetro de método. Indica una expresión de valor predeterminado para el campo o parámetro para inicializar la propiedad. Se utiliza para obtener valores de archivos de configuración (application.properties) como variables de entorno, o incluso expresiones. Es muy útil para proporcionar valores externos como URLs, API keys, puertos, etc.
+```bash
+app.nombre=MiAplicacion
+app.version=1.0.0
+```
+
+```java
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+@Component
+public class AppInfo {
+
+    @Value("${app.nombre}")
+    private String nombre;
+
+    @Value("${app.version}")
+    private String version;
+
+    public void mostrarInfo() {
+        System.out.println("Nombre de la aplicación: " + nombre);
+        System.out.println("Versión: " + version);
+    }
+}
+```
+
+### @Component
+Se usa en clases para indicar un componente de Spring. Marca la clase java como un bean o componente para que Spring lo agregue al contexto de la app. Utilizarlo cuando se tiene una clase que no en caja con roles especificos como @Service, @Repository o @Controller, pero que encesitas que sea gestionada por Spring.
+```java
+import org.springframework.stereotype.Component;
+
+@Component
+public class MiComponente {
+
+    public void hacerAlgo() {
+        System.out.println("Haciendo algo en MiComponente...");
+    }
+}
+```
+
+### @Service
+Marca una clase java que realiza algún servicio, como ejecutar lógica de negocios, realizar cálculos o llamar a una API externa.
+```java
+import org.springframework.stereotype.Component;
+
+@Service
+public class UserService {
+    @Autowired
+    private Repository<User> userRepository;
+
+    public void login(User user) {
+        if (user == null) return;
+        this.userRepository.login(user);
+    }
+}
+```
+
+### @Repository
+Se utiliza en clases java que acceden directamente a la base de datos. Para clases que funcionan como repositorio u objeto de acceso a datos.
+```java
+@Repository
+public interface MemberRepository extends JpaRepository<Member, Integer> {
+}
+```
+
+### @SpringBootApplication
+Se utiliza en la clase de aplicación para configurar un proyecto Spring Boot. Debe ir en el paquete base. Esta etiqueta escanea componentes.
+package com.jie.tp3futbol;
+```java
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class Tp3FutbolApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(Tp3FutbolApplication.class, args);
+	}
+
+}
+```
+
+### @RestController
+Se utiliza para marcar una clase como un controlador, donde cada método devuelve un objeto de dominio.
+```java
+@RestController
+public class TeamController {
+    @GetMapping
+    public ReponseEntity<?> getAllTeams() {
+        return ReponseEntity.status(HttpStatus.OK).body(this.teamService.findAll());
+    }
+}
+```
+
+### @RequestMapping
+Esta anotación se usa tanto a nivel de clase como de método. La anotación @RequestMapping se utiliza para asignar solicitudes web a clases de manejador y métodos de manejador específicos. Cuando @RequestMapping se usa en el nivel de clase, crea un URI base para el que se usará el controlador. Cuando esta anotación se utiliza en los métodos, le dará el URI en el que se ejecutarán los métodos del controlador. 
+```java
+@RestController
+@RequestMapping("/team")
+public class TeamController {
+    @RequestMapping(method = RequestMethod.GET)
+    public ReponseEntity<?> getAllTeams() {
+        return ReponseEntity.status(HttpStatus.OK).body(this.teamService.findAll());
+    }
+}
+```
+
+### Variantes de RequestMapping
+#### @GetMapping
+Se utiliza para asignar solicitudes HTTP GET a métodos de controlador específicos. Es una anotación compuesta que actúa como un acceso directo para @RequestMapping(method = RequestMethod.GET).
+
+#### @PostMapping
+Se utiliza para asignar solicitudes HTTP POST a métodos de controlador.
+
+#### @Put Mapping
+Se utiliza para asignar solicitudes HTTP PUT a métodos de controlador.
+
+#### @Patch
+Se utiliza para asignar solicitudes HTTP PATCH a métodos de controlador.
+
+#### @DeleteMapping
+Se utiliza para asignar solicitudes HTTP DELETE a métodos de controlador.
+
+### @ParhVariable
+Esta anotación se utiliza para anotar argumentos del método del controlador de solicitudes.
+
+La anotación @RequestMapping se puede usar para manejar cambios dinámicos en el URL donde un cierto valor de URL actúa como parámetro. Puede especificar este parámetro usando una expresión regular. La anotación @PathVariable se puede usar para declarar este parámetro.
+
+El nombre de la variable de parametro debe coincidir con el parametro dinamico de la URL.
+```java
+@GetMapping("/{id}")
+public User getUser(@PathVariable int id) {
+    //
+}
+```
+
+### @RequestBody
+Se utiliza para anotar argumentos del método del controlador de solicitudes. Indica un parámetro de método que esta vinculado con el cuerpo de la solicitud HTTP. Osea es para capturar el BODY de la solicitud.
+```java
+@PostMapping
+public User register(@RequestBody User info) {
+    //
+}
+```
+
+### @RequestHeader
+Se utiliza para acceder a los encabezados HTTP de una solicitud entrante. Los encabezados HTTP son metadatos que proporcionan información sobre la solicitud, como autenticación, información de agente de usuario, etc.
+```java
+@GetMapping("/protected-resource")
+public void accessProtectedResource(@RequestHeader(value = "Authorization") String authorization) {
+    //
+}
+```
+
+### @RequestParam
+Se utiliza para recuperar parametros de la URL. La anotación @RequestParam se usa para vincular parámetros de solicitud a un parámetro de método en su controlador.
+
+```bash
+http://example.com/users?minAge=18
+```
+
+```java
+@GetMapping("/users")
+public List<User> getUsers(@RequesstParam(value = "minAge", required = false) int minAge) {
+    //
+}
+```
+
+### @RequestPart
+Se usa en lugar de @RequestParam para acceder a partes de solicitudes multipart, como archivos y datos de formularios. Facilita el manejo de cargas de archivos junto con otros datos en la misma solicitud. Se puede usar por ejemplo para manejar la carga de un perfil de usuario que incluye una imagen y un nombre.
+```java
+@PostMapping("/uploadProfile")
+    public ResponseEntity<?> uploadProfile(
+            @RequestPart("file") MultipartFile file,
+            @RequestPart("name") String name) {
+        //
+    }
+```
+
+### @ResponseBody
+El valor devuelto por un método se convierte automáticamente a JSON (o XML si lo configuras) y se envía en el cuerpo de la respuesta HTTP.
+```java
+@GetMapping("/user")
+@ResponseBody
+public User getUser() {
+    User user = new User();
+    user.setId(1);
+    user.setName("Juan");
+    user.setEmail("juan@example.com");
+        
+    // Este objeto User será convertido a JSON automáticamente
+    return user;
+}
+```
+
+### @ResponseStatus
+Se utiliza para especificar el código de estado HTTP que debería devolver el método.
+```java
+@PostMapping("/user")
+@ResponseStatus(HttpStatus.CREATED)  // Devuelve 201 Created
+public void createUser() {
+    // Lógica para crear un nuevo usuario
+}
+```
+
+### @SessionAttribute
+Se usa para obtener un atributo de las sesión HTTP en un método del controlador.
+
+Esta anotación se usa para recuperar un atributo que ya está presente en la sesión. Supongamos que la sesión contiene un atributo llamado "user" que representa al usuario autenticado, y quieres acceder a él dentro de un controlador.
+
+```java
+ @GetMapping
+public String getUserProfile(@SessionAttribute("user") User user) {
+    // Accediendo al atributo "user" de la sesión
+    return "User profile: " + user.getName();
+}
+```
+
+### @SessionAttributes
+Se usa para indicar que atributos deben almacenarse durante la duracion de la comunicacion entre el cliente y el servidor. A diferencia de @SessionAttribute, que solo lee un atributo de la sesión, @SessionAttributes marca los atributos para ser almacenados en la sesión después de que se procesan en el controlador. Se declara a nivel de clase.
+```java
+@Controller
+@SessionAttributes("user")
+public class UserController {
+
+    @ModelAttribute("user")
+    public User setupUser() {
+        // Inicializa el objeto User y lo guarda en el modelo y sesión
+        return new User("John Doe");
+    }
+
+    @GetMapping("/showProfile")
+    public String showUserProfile(Model model) {
+        // El atributo "user" estará disponible en el modelo y también en la sesión
+        User user = (User) model.getAttribute("user");
+        return "profile";  // Retorna la vista del perfil de usuario
+    }
+}
+```
+
+### @CookieValue
+Se utiliza a nivel de parámetro de método. Utilizado para obtener el valor de una cookie.
+```bash
+JSESSIONID=418AB76CD83EF94U85YD34W
+```
+
+```java
+@ReuestMapping("/cookieValue")
+    public void getCookieValue(@CookieValue "JSESSIONID" String cookie){
+}
+```
+
+### @CrossOrigin
+Se usa a nivel de clase como a nivel de método para habilitar solicitudes de origen cruzado. CORS permite la comunicación entre diferentes dominios. En muchos casos el host que sirve JavaScript no es el mismo que el que sirve los datos.
+
+De forma predeterminada, la anotación @CrossOrigin permite todo el origen, todos los encabezados, los métodos HTTP especificados en la anotación @RequestMapping y una duración máxima de 30 min. Puede personalizar el comportamiento especificando los valores de atributo correspondientes.
+
+```java
+@CrossOrigin(maxAge = 3600)
+@RestController
+@RequestMapping("/account")
+public class AccountController {
+    @CrossOrigin(origins = "http://ejemplo.com")
+    @GetMapping("/message")
+    public Message getMessage() {
+        //
+    }
+
+    @GettMapping("/note")
+    public Note getNote() {
+        // ...
+    }
+}
+```
+En este ejemplo, los métodos getExample () y getNote () tendrán una edad máxima de 3600 segundos. Además, getExample () solo permitirá solicitudes de origen cruzado de http://ejemplo.com, mientras que getNote () permitirá solicitudes de origen cruzado de todos los hosts.
+
+### @RestControllerAdvice
+Se usa para clases que intercepcionan solicitudes y aplicar lógica común (como manejo de excepciones) a todos los controladores que estan anotados como @RestController. Siempre devuelve las respuestas en formato JSON (o en el que se haya configurado). Esta anotación se usa junto con la anotación @ExceptionHandler para manejar las excepciones que ocurren dentro del controlador.
+```java
+@RestControllerAdvice
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ExceptionResponse> handleIllegalArgumentException(IllegalArgumentException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ExceptionResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                e.getMessage()
+        ));
+    }
+```
+
+### @ExceptionHandler
+Se usa a nivel de método para manejar excepciones a nivel de controlador. Se usa para definir la clase de excepcion que atrapara.
+```java
+@ExceptionHandler(IllegalArgumentException.class)
+public ResponseEntity<ExceptionResponse> handleIllegalArgumentException(IllegalArgumentException e) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ExceptionResponse(
+        HttpStatus.BAD_REQUEST.value(),
+        HttpStatus.BAD_REQUEST.getReasonPhrase(),
+        e.getMessage()
+    ));
+}
+```
+
+### @PreAuthorize
+Permite que usuarios pueden acceder a ciertos métodos o recursos basados en sus roles o permisos.
+```java
+@PreAuthorize("hasRole('ROLE_ADMIN')")
+public void someAdminMethod() {
+    // solo accesible para usuarios con el rol ROLE_ADMIN
+}
+
+```
+
+- Expresiones Comunes: 
+    - hasRole('ROLE_NAME'): Verifica si el usuario tiene un rol especifico.
+    - hasAuthority('PERMISO'): Verifica si el usuario tiene una autoridad o permiso especifico.
+    - #username == authentication.principal.username: Compara datos del usuario autenticado (por ejemplo, verificar que el usuario actual es el propietario del recurso).
+
+### @Secured
+Es una anotación que se usa para definir roles que pueden aceder a un método. No utiliza expresioones SpEL como @PreAuthorize, y se límita a verificar si el usuario tiene uno o más roles.
+```java
+@Secured("ROLE_ADMIN")
+public void someAdminMethod() {
+    // solo accesible para usuarios con el rol ROLE_ADMIN
+}
+
+@Secured({"ROLE_ADMIN", "ROLE_USER"})
+public void someMethod() {
+    // accesible tanto para ROLE_ADMIN como ROLE_USER
+}
+```
+
+## Clases de Anotación
+Se utilizan para definir metadatos que se pueden aplicar a clases, campos, métodos, entre otros, para modificar su comportamiento o añadir información adicional.Facilita la reutilización de lógica común, puedes crear una anotación que contenga un comportamiento que se aplique en diferentes partes de tu aplicación. Esto puede ser útil para la validación, seguridad, transacciones, manejo de excepciones, etc.
+
+Por ejemplo para validar que una entrada de dato este presente en un enum.
+
+1. Definir la anotación personalizada:
+```java
+@Constraint(validatedBy = PositionValidator.class) // Indica la clase validadora.
+@Target({ ElementType.FIELD, ElementType.PARAMETER }) // Aplicable a parámetros.
+@Retention(RetentionPolicy.RUNTIME) // Disponible en tiempo de ejecución.
+public @interface ValidPosition {
+    String message() default "Invalid position"; // mensaje de error predeterminado
+    Class<?>[] groups() default {};
+    Class<? extends Payload>[] payload() default {};
+}
+```
+
+2. Crear la clase validadora asociada:
+```java
+public class PositionValidator implements ConstraintValidator<ValidPosition, String> {
+        @Override
+    public boolean isValid(String value, ConstraintValidatorContext context) {
+        // Si el valor es null de considera valor no valido
+        if (value == null) return false;
+
+        try {
+            Position.valueOf(value);
+            return true; // Es un valor valido
+        } catch (IllegalArgumentException e) {
+            return false; // No es un valor valido
+        }
+    }
+}
+```
+
+## Clases de Exception
+Se utiliza para crear clases que manejen errores específicos de la aplicación. En lugar d eutilizar las excepciones estándar de Java, se puede definir excepciones para representar mejor los problemas que podrán surgir en el contexto de la aplicación.
+
+Las excepciones personalizadas en Java generalmente extienden Exception (si es una excepción comprobada) o RuntimeException (si es una excepción no comprobada). Las excepciones comprobadas deben ser manejadas explícitamente con try-catch o throws, mientras que las no comprobadas son opcionales.
+
+Excepción que extiende RuntimeException (No comprobada)
+```java
+public class InvalidBookingException extends RuntimeException {
+    
+    public InvalidBookingException(String message) {
+        super(message);
+    }
+
+    public InvalidBookingException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+```
+
+Excepción que extiende Exception (Comprobada)
+```java
+public class InvalidBookingException extends Exception {
+    
+    public InvalidBookingException(String message) {
+        super(message);
+    }
+
+    public InvalidBookingException(String message, Throwable cause) {
+        super(message, cause);
+    }
+}
+```
 
 
 # Conceptos Backend
