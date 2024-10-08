@@ -983,7 +983,7 @@ public UserEntity getUserByIdWithTypedQuery(Long id) {
 ```
 
 # Spring Boot
-Extensión del framework Spring de JAVA que simplifica la configuración y el desarrollo de aplicaciones basadas en Spring. Su objetivo principal es hacer que el desarrollo de aplicaciones JAVA se más rápido y sencillo, especialmente para aplicaciones web y microservicios.
+Herramienta del framework Spring de JAVA que simplifica la configuración y el desarrollo de aplicaciones basadas en Spring. Su objetivo principal es hacer que el desarrollo de aplicaciones JAVA se más rápido y sencillo, especialmente para aplicaciones web y microservicios.
 
 ## ¿Qué es Spring?
 Es un framework para el desarrollo de aplicaciones y contenedor de inversión de control, de código abierto para JAVA. Hace que la programación en JAVA sea más rápida, fácil y segura para todos. El enfoque de Spring esta en la velocidad, la simplicidad y la productividad. Fácilita la configuración y el trabajo con JAVA.
@@ -1590,6 +1590,91 @@ public class InvalidBookingException extends Exception {
 
     public InvalidBookingException(String message, Throwable cause) {
         super(message, cause);
+    }
+}
+```
+
+# Spring Security
+- Es una herramienta del framework Spring y se utiliza en conjunto con Spring Boot, Spring Cloud, entre otros.
+- Es un marco de seguridad de nivel empresarial altamente personalizable para aplicaciones Java.
+- Se utiliza para autenticar y autorizar usuarios,p roteger recursos y aplicar políticas de seguridad en aplicaciones web y servicios RESTful.
+
+![springsecuritydiagrama](./assets/spring-security-arq.PNG)
+
+## Conceptos utilizados en Spring Security
+- **Filtros de Seguridad**: Son componentes que interceptan las peticiones HTTP para realizar tareas de autenticación, autorización y seguridad.
+- **Proveedores de Autenticación**: Son componentes respónsables de autenticar las credenciales. Trabajan en conjunto con otros componentes, como los filtros de seguridad y proveedores de detalles de usuario, para verificar las credenciales y establecesr la autenticaciópn del usuario.
+    - **DaoAuthenticationProvider**
+    - **LdapAuthenticationProvider**
+    - **JaasAuthenticationProvider**
+    - **OpenIDAuthenticationProvider y OAuth2AuthenticationProvider**
+    - Entre otros...
+- **Proveedores de Detalles de Usuarios**: Es responsable de proporcionar los detalles específicos del usuario durante el proceso de autenticación. Pueden incluir información como el nombre de usuario, la contraseña encriptada y los roles asociados al usuario.
+
+## Ejemplo Spring Security
+```java
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity // Necesario para utilizar anotaciones de autenticacion en el controller
+public class SecurityConfig {
+    // Filtros de Seguridad
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        return httpSecurity
+                .csrf(csrf -> csrf.disable())
+                .httpBasic(Customizer.withDefaults())
+                .sessionManagement((session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)))
+                .build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
+    }
+
+    // Proveedor de Autenticación
+    // El DaoAuthenticationProvider que se conecta a la BD necesita un
+    // UserDetailsService para comunicarse con la BD y un PaswwordEncoder
+    // para encriptar las contraseñas.
+    @Bean
+    public AuthenticationProvider authenticationProvider(UserDetailServiceImpl userDetailsService) throws Exception {
+        // Provider q nos permite conectarnos a una base de datos
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setPasswordEncoder(passwordEncoder()); // Componente que encripta y valida las passwords
+        provider.setUserDetailsService(userDetailsService); // Componente que se conecta con la base de datos
+        return provider;
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+}
+```
+
+Luego en el Controller
+
+```java
+@RestController
+@RequestMapping("/api")
+@PreAuthorize("denyAll()") // Por defecto rechaza todas las peticiones
+public class TestAuthController {
+    @GetMapping("/hello")
+    @PreAuthorize("permitAll()")// Permite endpoint a todos los usuarios, sin necesidad de autenticar
+    public String hello() {
+        return "Hello World";
+    }
+
+    @GetMapping("/hello-secured")
+    @PreAuthorize("hasAuthority('READ')") // Permite endpoint a usuarios con authority READ
+    public String helloSecured() {
+        return "Hello World Secured";
+    }
+
+    @GetMapping("/hello-secured2")
+    @PreAuthorize("hasAuthority('CREATE')") // Permite endpoint a usuarios con authority READ
+    public String helloSecured2() {
+        return "Hello World Secured2";
     }
 }
 ```
