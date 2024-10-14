@@ -7,6 +7,7 @@ En este repositorio voy a tener todos los apuntes de diferentes tecnologías est
 - [Typescript](#typescript)
 - [Java](#java)
 - [SpringBoot](#spring-boot)
+- [SpringSecurity](#spring-security)
 - [ConceptosBackend](#conceptos-backend)
 - [BasesDeDatos](#bases-de-datos)
 - [POO](#poo---programación-orientada-a-objetos)
@@ -1679,6 +1680,416 @@ public class TestAuthController {
 }
 ```
 
+## Spring Security + JWT
+Para utilizar Spring Security junto con [JWT](#tokens) hay que instalar la dependencia de Spring Security y 3 dependencias de JWT: jjwt-api, jjwt-impl y jjwt-jackson.
+
+### Entidades, Controladores, Servicios y Repositorios.
+#### Entidades
+Tendremos que tener una entidad que represente un Usuario, esta entidad tendra que tener un rol o roles y estos roles tendran permisos.
+Ademas tendra unos métodos que utiliza Spring Security:
+- getAuthorities(): Devuelve una lista de los roles y permisos que tiene el usuario.
+- isAccountNonExpired(): Indica si la cuenta no ha expirado.
+- isAccountNonLocked(): Indica si la cuenta no esta bloqueada.
+- isCredentialsNonExpired(): Indica si la cuenta no esta expirada.
+- isEnabled(): Indica si la cuenta esta habilitada.
+
+```java
+@Entity
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Table(name = "\"user\"")
+public class UserEntity implements UserDetails {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Null(message = "ID must be null")
+    private Long id;
+
+    @NotBlank(message = "Username must not be empty")
+    @Size(max = 40, message = "Username must have a maximum of 40 character")
+    private String username;
+
+    @NotBlank(message = "Password must not be empty")
+    @Size(min = 8, message = "Password must be at least 8 characters")
+    private String password;
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        // Obtengo Rol y Permisos para mapearlos a GrantedAuthority
+        List<GrantedAuthority> authorities = role.getPermissions().stream()
+                .map(permission -> new SimpleGrantedAuthority(permission.name()))
+                .collect(Collectors.toList());
+
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + role.name()));
+
+        return authorities;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
+}
+
+public enum Role {
+    CUSTOMER(Arrays.asList(Permission.READ_ALL_PRODUCTS)),
+    ADMINISTRATOR(Arrays.asList(Permission.SAVE_ONE_PRODUCT, Permission.READ_ALL_PRODUCTS));
+
+    private List<Permission> permissions;
+
+    Role(List<Permission> permissions) {
+        this.permissions = permissions;
+    }
+
+    public List<Permission> getPermissions() {
+        return permissions;
+    }
+
+    public void setPermissions(List<Permission> permissions) {
+        this.permissions = permissions;
+    }
+}
+
+public enum Permission {
+    READ_ALL_PRODUCTS,
+    SAVE_ONE_PRODUCT
+}
+```
+
+#### Controller
+Un controller que por lo menos tenga un método para login y que devuelva un JWT en el body de la respuesta.
+
+```java
+@RestController
+@RequestMapping("/auth")
+@PreAuthorize("denyAll()")
+public class AuthController {
+    @Autowired
+    private AuthService authService;
+
+    @PostMapping("/register")
+    @PreAuthorize("permitAll()") // No es necesario estar autenticado.
+    public ResponseEntity<UserEntity> register(@Valid @RequestBody UserEntity user) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(user));
+    }
+
+    @PostMapping("/login")
+    @PreAuthorize("permitAll()") // No es necesario estar autenticado.
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest authRequest) {
+        AuthResponse jwt = authService.login(authRequest);
+
+        return ResponseEntity.status(HttpStatus.OK).body(jwt);
+    }
+}
+```
+
+#### Servicios y Repositorios
+Tendremos que tener dos capas para conectarnos entre el controller y la BD.
+
+### Configuración de Spring Security
+Por empezar necesitamos una clase que nos brinde un **AuthenticationManager**, que es el componente encargado de gestionar el proceso de autenticación de los usuarios. Se encarga de recibir las credenciales de autenticación y verificar si son válidas utilizando diferentes estrategias de autenticación configuradas en la aplicación. El AuthenticationManager se crea utilizando el AuthenticationConfiguration, que es un objeto que gestiona la configuración de autenticación en Spring Security. El método getAuthenticationManager() retorna un ProviderManager, que es una implementación por defecto de AuthenticationManager que delega la autenticación a una lista de AuthenticationProvider.
+
+Ademas en esta clase tendremos un metodo que nos de un **AuthenticationProvider**, hay muchos Providers pero en este caso utilizaremos el **DaoAuthenticacionProvider**, que se utiliza principalmente para la autenticación basada en credenciales almacenadas en una base de datos u otra fuente de datos persistente. El DaoAuthenticacionProvider necesita de un Bean que recupere la información del usuario desde la Base de Datos (UserDetailsService) y de un Bean que se encargue de encriptar la contraseña (PasswordEncoder).
+
+```java
+@Component
+public class SecurityBeansInjector {
+    @Autowired
+    private UserRepository userRepository;
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager(); // ProviderManager
+    }
+
+    @Bean
+    public AuthenticationProvider authenticationProvider(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        // El DaoAuthenticationProvider necesita de un Bean que recupere la info
+        // del usuario desde la BD (UserDetailsService) y de un Bean que encripte la contraseña
+        // (PasswordEncoder)
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder);
+        return provider;
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService() {
+        // Método que se encarga de recuperar los datos del usuario desde la BD
+        return username -> {
+            return userRepository.findByUsername(username)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        };
+    }
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        // Método que se encarga de encriptar la password
+        return new BCryptPasswordEncoder();
+    }
+}
+```
+
+Tendremos que tener una clase HttpSecurityConfig que tendra una anotación @EnableMethodSecurity, que indica que los endpoints seran protegidos en el controller. Esta clase nos proporciona un método que devuelve un **SecurityFilterChain**, que recibe un método HTTP por parametro y utiliza el authenticationProvider definido anteriormente. En este método se definiran los filtros que tendra cada solicitud al http.
+
+En el método SecurityFilterChain se agregara el Filtro de JWT que vamos a crear.
+
+```java
+@Component
+@EnableMethodSecurity
+public class HttpSecurityConfig {
+    @Autowired
+    private AuthenticationProvider authenticationProvider;
+
+    @Autowired
+    private JwtAuthFilter jwtAuthFilter;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(csrf -> csrf.disable()) // Deshabilita protección CSRF
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // No guarda info entre peticiones en el servidor
+                .authenticationProvider(authenticationProvider) // Inyecta DaoAuthenticationProvider ya definido
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class); // Filtro de JWT.
+        return http.build();
+    }
+}
+```
+
+### Generación del JWT y sus métodos útiles
+Tendremos un Servicio para el JWT el cual tendra métodos para generar un Token y otros para obtener el subject (user) y el payload (información) del mismo.
+
+En JWT (JSON Web Token), el subject (o sub en el payload del token) es uno de los claims estándar que se utiliza para identificar al usuario o entidad a la que se refiere el token. Este claim representa el "sujeto" o "propietario" del token, es decir, la entidad principal para la cual se ha emitido el token.
+
+Para generar un Token ademas necesitamos dos variables: Tiempo de expiración y una Secret Key que debera ser encriptada, ambos atributos tendran que ser guardados en application.properties por seguridad.
+
+```java
+@Service
+public class JwtService {
+    @Value("${security.jwt.expiration-minutes}")
+    private Long EXPIRATION_MINUTES;
+
+    @Value("${security.jwt.secret-key}")
+    private String SECRET_KEY;
+
+    // Método que genera y devuelve el JWT.
+    public String generateToken(UserEntity user, Map<String, Object> claims) {
+        // Recibe el usuario de la BD y los Claims (Información útil que va en el payload del token)
+        return Jwts.builder()
+                .setClaims(claims) // Setea información al payload.
+                .setSubject(user.getUsername()) // Setea el username al payload.
+                .setIssuedAt(new Date(System.currentTimeMillis())) // Setea la fecha en que fue generado
+                .setExpiration(new Date(System.currentTimeMillis() + (EXPIRATION_MINUTES * 60 * 1000))) // Setea fecha de expiración
+                .setHeaderParam(Header.TYPE, Header.JWT_TYPE) // Setea el header
+                .signWith(generateSecretKey()) // Firma el token con el método de generar la Secret Key
+                .compact(); // Compact para armar el token.
+    }
+
+    // Método que genera la Secret Key del JWT.
+    // Lo que hace es descifrar el string que le proporcionamos
+    // para la secret key.
+    private Key generateSecretKey() {
+        byte[] secretKeyAsBytes = Decoders.BASE64.decode(SECRET_KEY);
+        return Keys.hmacShaKeyFor(secretKeyAsBytes);
+    }
+
+    public String extractUsername(String jwt) {
+        // Obtengo el subject/username del token
+        // llamando al metodo que obtiene los claims y
+        // obteniendole el Subject
+        return extractAllClaims(jwt).getSubject();
+    }
+
+    private Claims extractAllClaims(String jwt) {
+        // Los claims son el payload del token, donde se guarda la informacion
+        // util del token.
+        return Jwts.parserBuilder().setSigningKey(generateSecretKey()).build()
+                .parseClaimsJws(jwt).getBody();
+    }
+}
+```
+
+Luego en un Servicio AuthService que se conectara con el AuthController debemos implementar el login que devolvera el Token generado.
+
+```java
+@Service
+public class AuthService {
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AuthenticationManager authenticationManager; // Definido en la clase SecurityBeansInjector
+
+    @Autowired
+    private JwtService jwtService;
+
+    public UserEntity register(UserEntity user) {
+        if (user == null) throw new IllegalArgumentException("user is null");
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
+            throw new IllegalArgumentException("user already exists");
+        }
+
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        return userRepository.save(user);
+    }
+
+    // Recibe un AuthRequest, DTO que contiene username y password del usuario.
+    public AuthResponse login(@Valid AuthRequest authRequest) {
+        // UsernamePasswordAuthenticationToken se utiliza para representar el proceso de autenticación basado
+        // en un nombre de usuario y una contraseña, es decir la entidad que contiene el username y el password
+        // del usuario de la BD en SpringSecurity, es como la entidad usuario de SpringSecurity.
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                authRequest.username(), authRequest.password()
+        );
+
+        // Se llama al método authenticate de Authentication Manager pasandole el usuario de SpringSecurity.
+        authenticationManager.authenticate(authToken);
+
+        // Luego recuperamos de la BD el usuario por el username.
+        UserEntity user = userRepository.findByUsername(authRequest.username()).get();
+
+        // Luego llamamos al método generateToken de jwtService que definimos anteriormente, esto nos va a
+        // proporcionar el JWT. Se le pasa el usuario de la BD y los claims (informacion) como roles, permisos
+        // y nombre de usuario.
+        String jwt = jwtService.generateToken(user, generateExtraClaims(user));
+
+        // Retornamos el JWT.
+        return new AuthResponse(jwt);
+    }
+
+    private Map<String, Object> generateExtraClaims(UserEntity user) {
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("username", user.getUsername());
+        extraClaims.put("role", user.getRole().name());
+        extraClaims.put("permissions", user.getAuthorities());
+
+        return extraClaims;
+    }
+}
+```
+
+### Proceso de autenticación cuando un endpoint esta protegido (JWT Filter)
+El Jwt Filter extiende de la clase OncePerRequestFilter e implementa su método doFilterInternal.
+
+```java
+@Component
+public class JwtAuthFilter extends OncePerRequestFilter {
+    @Autowired
+    private JwtService jwtService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        // 1. Obtener el header que contiene el jwt
+        String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+
+        // Si el header no esta presente o no comienza con Bearer, se rechaza la autenticación
+        // y se sigue con el resto de los filtros.
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // 2. Obtener el jwt desde el header
+        String jwt = authHeader.split(" ")[1];
+
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            try {
+                // 3. Obtener subjetc/username del jwt
+                String username = jwtService.extractUsername(jwt);
+
+                // 4. Setear un objeto Authentication dentro del SecuriryContext
+                UserEntity user = userRepository.findByUsername(username).get();
+
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        username, null, user.getAuthorities()
+                );
+
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            } catch (ExpiredJwtException e) {
+                sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Token has expired", e.getMessage());
+                return;
+            } catch (JwtException e) {
+                sendErrorResponse(response, HttpServletResponse.SC_UNAUTHORIZED, "Invalid JWT token", e.getMessage());
+                return;
+            } catch (Exception e) {
+                sendErrorResponse(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Authentication error", e.getMessage());
+                return;
+            }
+        }
+
+        // 5. Ejecutar el resto de filtros
+        filterChain.doFilter(request, response);
+    }
+
+    private void sendErrorResponse(HttpServletResponse response, int status, String message, String details) throws IOException {
+        ErrorResponseDto errorResponse = new ErrorResponseDto(status, message, details);
+        response.setStatus(status);
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        response.getWriter().write(objectMapper.writeValueAsString(errorResponse));
+    }
+}
+```
+
+### Endpoints protegidos
+Podremos tener endpoints que necesitan de autenticación.
+
+```java
+@RestController
+@RequestMapping("/product")
+@PreAuthorize("denyAll()") // Por default rechaza todas las peticiones
+public class ProductController {
+    @Autowired
+    private ProductService productService;
+
+    @GetMapping
+    @PreAuthorize("hasAuthority('READ_ALL_PRODUCTS')") // Unicamente usuarios con el permiso de READ_ALL_PRODUCTS tienen acceso al endpoint
+    public ResponseEntity<List<ProductEntity>> findAll() {
+        List<ProductEntity> products = productService.findAll();
+
+        if (products.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body(products);
+    }
+
+    @PostMapping
+    @PreAuthorize("hasAuthority('SAVE_ONE_PRODUCT')") // Unicamente usuarios con el permiso de SAVE_ONE_PRODUCT tienen acceso al endpoint
+    public ResponseEntity<ProductEntity> create(@Valid @RequestBody ProductEntity product) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(product));
+    }
+}
+```
 
 # Conceptos Backend
 ## Arquitecturas
