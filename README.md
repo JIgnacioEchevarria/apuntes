@@ -2091,6 +2091,87 @@ public class ProductController {
 }
 ```
 
+### Resumen de como funciona la Autenticación para obtener un Token
+#### 1. Registro y guardado de Usuario
+Cuando se registra un usuario, en la clase **AuthService** se guarda la entidad en la base de datos usando el **UserRepository**:
+
+```java
+UserEntity newUser = new UserEntity(user.username(), passwordEncoder.encode(user.password()), user.role());
+return userRepository.save(newUser);
+```
+Este código crea un objeto **UserEntity**, encripta la contraseña utilizando el **PasswordEncoder** que hemos configurado y luego lo guarda en la base de datos.
+
+#### 2. Login
+Cuando se intenta autenticar un usuario con el método login, se crea una instancia de **UsernamePasswordAuthenticationToken** con las credenciales del usuario que viene por la request (username y password):
+
+```java
+UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+    userReq.username(), userReq.password()
+);
+```
+
+**UsernamePasswordAuthenticationToken** es una clase que representa el token de autenticación basado en el nombre de usuario y la contraseña. Este objeto es lo que Spring Security usa internamente para validar las credenciales del usuario.
+
+#### 3. Llamada al método authenticate
+Es la llamada clave que inicia el proceso de autenticación:
+
+```java
+authenticationManager.authenticate(authToken);
+```
+
+**authenticationManager.authenticate()** es responsable de autenticar el usuario. Internamente, Spring Security usa uno o varios **AuthenticationProvider** para llevar a cabo el proceso de autenticación. En el caso de esta App se esta usando el **DaoAuthenticationProvider** para cargar el usuario desde la base de datos y luego comparar la contraseña proporcionada (en el UsernamePasswordAuthenticationToken) con la ques esta almacenada en la base de datos.
+
+#### Código completo de AuthService
+
+```java
+@Service
+public class AuthService {
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private JwtService jwtService;
+
+    public UserEntity register(RegisterRequest user) {
+        if (userRepository.findByUsername(user.username()).isPresent()) {
+            throw new IllegalArgumentException("user already exists");
+        }
+
+        UserEntity newUser = new UserEntity(user.username(), passwordEncoder.encode(user.password()), user.role());
+
+        return userRepository.save(newUser);
+    }
+
+    public AuthResponse login(AuthRequest userReq) {
+        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                userReq.username(), userReq.password()
+        );
+
+        authenticationManager.authenticate(authToken);
+
+        UserEntity user = userRepository.findByUsername(userReq.username()).get();
+
+        String jwt = jwtService.generateToken(user, generateExtraClaims(user));
+
+        return new AuthResponse(jwt);
+    }
+
+    private Map<String, Object> generateExtraClaims(UserEntity user) {
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("username", user.getUsername());
+        extraClaims.put("role", user.getRole());
+        extraClaims.put("permissions", user.getAuthorities());
+        return extraClaims;
+    }
+}
+```
+
 # Conceptos Backend
 ## Arquitecturas
 ### Monolitos y Microservicios
