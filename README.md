@@ -6,6 +6,7 @@ En este repositorio voy a tener todos los apuntes de diferentes tecnologías est
 - [PostgreSQL](#postgresql)
 - [Typescript](#typescript)
 - [Java](#java)
+- [JavaStreams](#java-streams-y-funciones-lambdas)
 - [SpringBoot](#spring-boot)
 - [SpringSecurity](#spring-security)
 - [ConceptosBackend](#conceptos-backend)
@@ -981,6 +982,598 @@ public UserEntity getUserByIdWithTypedQuery(Long id) {
     typedQuery.setParameter("id", id);
     return typedQuery.getSingleResult();
 }
+```
+
+## Mappers
+Clase o interfaz que se utiliza para convertir un objeto de un tipo a otro.
+
+### Características
+- **Separación de responsabilidades**: Los mappers ayudan a mantener una separación clara entre la lógica de negocio y la lógica de presentación o persistencia.
+- **Facilitan la conversión de datos**: Convierten los datos en una representación que es más útil o segura para el contexto en el que se va a usar.
+- **Reutilización de lógica de conversión**: Permiten centralizar la lógica de conversión de datos, lo que facilita el mantenimiento y evita la duplicación de código.
+
+### Mapeo de Clase a DTO
+
+**Entidad**
+```java
+public class Player {
+    private Long id;
+    private String fullName;
+    private Integer age;
+    private Position position;
+
+    // Constructor
+
+    // Getters y Setters
+}
+```
+
+**DTOs**
+```java
+public record PlayerDTO(
+    Long id,
+    String fullName
+) {
+}
+
+public record CreatePlayerDTO(
+    String fullName,
+    Integer age,
+    Position position
+) {
+}
+```
+
+**Mapper**
+```java
+@Mapper
+public interface PlayerMapper {
+    // Mapea de entidad Player a PlayerDTO
+    PlayerDTO playerToPlayerDto(Player player);
+
+    // Mapea de CreatePlayerDTO a Player
+    Player createPlayerDtoToPlayer(CreatePlayerDTO createPlayerDto)
+}
+```
+
+### Mapeo anidado
+
+**Entidades**
+```java
+public class Match {
+    private Long id;
+    private Tournament tournament;
+    private Team homeTeam;
+    private Team awayTeam;
+}
+
+public class Tournament {
+    private Long id;
+    private String name;
+}
+
+public class Team {
+    private Long id;
+    private String name;
+}
+```
+
+**DTO**
+El DTO de Match contiene 2 DTO dentro, que ya estan creados
+```java
+public record MatchDTO(
+    TournamentDTO tournament,
+    TeamDTO homeTeam,
+    TeamDTO awayTeam
+) {
+}
+```
+
+**Mapper**
+Para mapear una entidad a un DTO que dentro tiene otros DTOs, hay que inclui con una anotación los mapper de los DTOs que tiene dentro, ya que necesita mapear las entidades Tournament y Team de la entidad Match, a sus respectivos DTOs.
+```java
+@Mapper
+public interface TournamentMapper {
+    TournamentDTO tournamentToTournamentDto(Tournament tournament);
+}
+
+@Mapper
+public interface TeamMapper {
+    TeamDTO teamToTeamDto(Team team);
+}
+
+// Con la propiedad uses importo los mappers que necesito.
+@Mapper(uses = {TournamentMapper.class, TeamMapper.class})
+public interface MatchMapper {
+    MatchDTO matchToMatchDto(Match match);
+}
+```
+
+### Mapeo customizado
+Suponiendo que hay una funcionalidad que devuelve una lista de productos junto con la cantidad de unidades vendidas en un determinado dia, y devuelve el ID, Nombre, y Cantidad de unidades vendidas del Producto. La entidad Producto es así:
+
+```java
+public class Product {
+    private Long id;
+    private String name;
+    private Double price;
+}
+```
+
+Para eso se hace una query que devuelve un atributo con la función count. Algo así:
+```SQL
+"SELECT p.id AS productId, p.name AS productName, COUNT(v) AS quantity"
+```
+
+Luego para devolver la respuesta al cliente creamos un DTO:
+```java
+public record ProductWithSalesDTO(
+    Long id,
+    String name,
+    Long quantity
+) {   
+}
+```
+
+En lugar de recorrer la respuesta de la query y crear instancias de ProductDTO, creamos un mapper custom. Como los atributos a mapear tienen diferentes nombres, hay que indicar que atributo se mapea con cual.
+```java
+@Mapper
+public interface ProductMapper {
+    @Mapping(source = "productId", target = "id")
+    @Mapping(source = "productName", target = "name")
+    @Mapping(source = "quantity", target = "quantity")
+    ProductWithSalesDTO productWithSalesProjectionToProductWithSalesDto(ProductWithSalesProjection productWithSalesProjection);
+}
+```
+
+## Projections
+Projection es una técnica que permite seleccionar y retornar solo ciertos atributos de una entidad en lugar de toda la entidad completa. Son útiles para optimizar consultas y mejorar el rendimiento al reducir la cantidad de datos transferidos entre capas o almacenados en memoria. Las proyecciones suelen emplearse en aplicaciones que interactúan con bases de datos, donde se necesita evitar la carga de datos innecesarios.
+
+Hay varios tipos de Projections pero los más útiles son los siguientes:
+
+### Proyección basada en objetos (DTO)
+Se crea un DTO que contiene solo los atributos necesarios y se usa en lugar de la entidad completa.
+
+```java
+public class UserDTO {
+    private String name;
+    private String email;
+}
+
+// En el repositorio
+@Query("SELECT new com.example.UserDTO(u.name, u.email) FROM User u")
+List<UserDTO> findAllUsers();
+```
+
+### Proyección de interfaces
+JPA permite definir una interfaz con los métodos de los atributos específicos que se necesitan. Spring Data JPA se encarga de mapear los métodos definidos en la interfaz con los nombres de los campos de la consulta (getName() --> name), es decir que los nombres de los métodos tiene que coincidir lo que va luego del get con el nombre del campo en la consulta.
+
+```java
+public interface UserProjection {
+    String getName();
+    String getEmail();
+}
+
+// En el repositorio
+@Query("SELECT u.name AS name, u.email AS email FROM User u")
+List<UserProjection> findAllUsers();
+```
+
+# Java Streams y Funciones Lambdas
+Los ejemplos en ejecución en las demas clases.
+
+## Funciones Lambdas
+Son funciones Flechas de Java. Hay 3 maneras de hacer funciones lambda:
+
+#### Lambda de una o más líneas con llaves
+```java
+Consumer<String> consumer = (param) -> {
+    System.out.println(param);
+};
+
+consumer.accept("Hello World!");
+```
+
+#### Lambda de una línea sin llave
+```java
+Consumer<String> consumer = (param) -> System.out.println(param);
+
+consumer.accept("Hello World!");
+```
+
+#### Lambda de una línea reducida
+```java
+Consumer<String> consumer = System.out::println;
+
+consumer.accept("Hello World!");
+```
+
+### Consumer
+Recibe un parametro y no retorna nada. Entre los <> va el tipo del parametro.
+```java
+Consumer<String> consumer = (param) -> {
+    System.out.println(param);
+};
+
+consumer.accept("Hello World!");
+```
+
+### BiConsumer
+Recibe 2 parametros y no retorna nada. Entre los <> van los tipos de los parametros.
+```java
+BiConsumer<String, String> biConsumer = (param1, param2) -> {
+    System.out.println(param1 + " " + param2);
+};
+
+biConsumer.accept("Hola", "Mundo");
+```
+
+### Supplier
+No recibe ningún parametro y retorna un resultado. Entre los <> va el tipo de retorno.
+```java
+Supplier<String> supplier = () -> {
+    return "Hola, soy el gurri";
+};
+
+System.out.println(supplier.get());
+```
+
+### Function
+Recibe un parametro y retorna un resultado. En los <> va primero el tipo del parametro, y segundo el tipo de retorno.
+```java
+Function<Integer, String> function = (num) -> {
+    return "El número recibido es: " + num;
+};
+
+String result = function.apply(3);
+System.out.println(result);
+```
+
+### BiFunction
+Recibe 2 parametros y retorna un resultado. Entre los <>, primera y segunda posición van los tipos de los parametros, y en tercera posición el tipo de retorno.
+```java
+BiFunction<Integer, Integer, Boolean> biFunction = (num1, num2) -> {
+    return num1 > num2;
+};
+System.out.println(biFunction.apply(3, 1));
+```
+
+### Predicate
+Recibe un parametro y devuelve un booleano. Entre los <> va el tipo del parametro.
+```java
+Predicate<String> predicate = (param) -> {
+    return param.length() > 5;
+};
+
+System.out.println(predicate.test("Hola Mundo"));
+```
+
+### BiPredicate
+Recibe dos parametros y retorna un booleano. Entre los <> van los tipos de ambos parametros.
+```java
+BiPredicate<Integer, Integer> biPredicate = (num1, num2) -> {
+    return num1 > num2;
+};
+System.out.println(biPredicate.test(10, 4));
+```
+
+### BinaryOperator
+Recibe dos parametros del mismo tipo y retorna un valor del mismo tipo. Entre los <> va el Tipo de dato.
+```java
+BinaryOperator<Integer> binaryOperator = (num1, num2) -> {
+    return num1 + num2;
+};
+System.out.println(binaryOperator.apply(3, 7));
+```
+
+### UnaryOperator
+Recibe un parametro de un tipo y devuelve un valor del mismo tipo. Entre los <> va el tipo del dato.
+```java
+UnaryOperator<String> unaryOperator = (param) -> {
+    return "La cadena recibida es: " + param;
+};
+System.out.println(unaryOperator.apply("Hola Mundo."));
+```
+
+### Runnable
+No recibe ningún parametro y no retorna nada, solo ejcuta una tarea.
+```java
+Runnable runnable = () -> {
+    System.out.println("Hola Mundo!");
+};
+runnable.run();
+```
+
+### Callable
+No recibe ningún parametro, pero retorna un resultado y puede lanzar una excepción. Entre los <> va el tipo de retorno.
+```java
+Callable<String> callable = () -> {
+    return "Resultado de la tarea";
+};
+
+try {
+    callable.call();
+} catch (Exception e) {
+    throw new RuntimeException(e);
+}
+```
+
+## Streams
+Un Stream es una secuencia de elementos que se puede procesar de forma declarativa (usando expresiones lambda, por ejemplo). Los Streams permiten realizar operaciones sobre colecciones de datos (como listas o conjuntos) de manera eficiente y concisa. Un Stream no almacena datos, sino que proporciona una vista sobre los datos de una colección u otra fuente de datos. **Características**:
+- **No almacena datos**: Un Stream no almacena los datos en sí, sino que actúa como un canal para datos que provienen de colecciones, arryas, funciones, etc.
+- **Inmutable**: Las operaciones sobre un Stream no modifican la fuente original de datos, sino que crean nuevos Streams.
+- **Lazy**: Muchas operaciones de un Stream (como **filter**, **map**) se ejecutan de manera perezosa, lo que significa que no se procesasn hasta que una operación terminal (como **collect**, **foreach**) es llamada.
+- **Permite operaciones en paralelo**: Se pueden realizar operaciones paralelas en Streams para mejorar el rendimiento en colecciones grandes.
+
+En resumen, los Streams funcionan de la siguiente manera: Supongamos que tenemos una lista de Nombres en Java
+
+```java
+List<String> names = Arrays.asList("Ana", "Carlos", "Luis");
+```
+
+Cuando a esa lista se le aplica un .stream(), cada elemento de la lista entrara por el stream, se realizara la operación que se desee con el elemento, y por último saldra del stream. Es como una cinta donde van pasando los elementos y se reqalizan operaciones con los mismos.
+
+```java
+names.stream().forEach((name) -> System.out.println(name));
+```
+
+En Streams existen los **Operadores finales** y los **Operadores no finales**. Los finales terminan con el flujo y los no finales no terminan el flujo, necesitan de un operador final que les siga para terminarlo. Los operadores se pueden concatenar, por ejemplo:
+```java
+names.stream()
+    .map((name) -> name.toUpperCase())
+    .filter((name) -> name.startsWith("A"))
+    .forEach(System.out::println);
+```
+Primero Mapea la lista, luego la filtra y luego la itera imprimiendo cada elemento.
+
+### Foreach - Operador Final
+Itera sobre los elementos de un Stream, recibe un [Consumer](#consumer) como argumento.
+```java
+names.stream().forEach((name) -> System.out.println(name));
+```
+**Lista**
+```java
+List<String> names = Arrays.asList("Ana", "Luis", "Oscar", "Maria", "Ana");
+```
+**Salida**
+```bash
+"Ana", "Luis", "Oscar", "Maria", "Ana"
+```
+
+### Filter - Operador No Final
+Filtra los elementos que cumplen con una condición. Recibe un [Predicate](#predicate) como argumento.
+```java
+names.stream().filter((name) -> name.length() > 3)
+    .forEach((name) -> System.out.println(name));
+```
+En este caso filtrara la lista por los nombres que tengan más de 3 letras, luego los imprime con foreach.
+
+**Lista**
+```java
+List<String> names = Arrays.asList("Ana", "Luis", "Oscar", "Maria", "Ana");
+```
+**Salida**
+```bash
+"Luis", "Oscar", "Maria"
+```
+
+### Map - Operador No Final
+Transforma los elementos aplicando una función. Recibe un [Function](#function) como argumento.
+```java
+names.stream().map((name) -> "Hola " + name)
+    .forEach(System.out::println);
+```
+En este caso toma los Strings de la lista names y les concatena un "Hola", luego los imprime con foreach.
+
+**Lista**
+```java
+List<String> names = Arrays.asList("Ana", "Luis", "Oscar", "Maria", "Ana");
+```
+**Salida**
+```bash
+"Hola Ana", "Hola Luis", "Hola Oscar", "Hola Maria", "Hola Ana"
+```
+
+
+### Sorted - Operador No Final
+Ordena los elementos del Stream. Recibe un **Comparator** como argumento, pero por defecto ordena alfabeticamente con Strings o de menor a mayor con Integers.
+```java
+names.stream()
+    .sorted()
+    .forEach(System.out::println);
+```
+En este caso ordena los names alfabeticamente.
+
+**Lista**
+```java
+List<String> names = Arrays.asList("Ana", "Luis", "Oscar", "Maria", "Ana");
+```
+**Salida**
+```bash
+"Ana", "Ana", "Luis", "Maria", "Oscar"
+```
+
+
+### Reduce - Operador Final
+Combina todos los elementos en un solo valor. Recibe un [BinaryOperator](#binaryoperator) como argumento.
+```java
+String result = names.stream().reduce("Resultado: ", (a, b) -> {
+    return a + " " + b;
+});
+
+System.out.println(result);
+```
+
+**Lista**
+```java
+List<String> names = Arrays.asList("Ana", "Luis", "Oscar", "Maria", "Ana");
+```
+**Salida**
+```bash
+"Ana", "Luis", "Oscar", "Maria", "Ana"
+```
+
+
+### Collect - Operador Final
+Recoge los elementos de una colección. Recibe un **Collectors** como argumento. Es muy utilizado para recoger los elementos de una lista y guardarlos en otra lista (En versiones más recientes de Java, collect() es sustituido por toList(), toArray(), etc...).
+```java
+List<String> namesUpperCase = names.stream()
+    .map((name) -> name.toUpperCase())
+    .collect(Collectors.toList());
+
+namesUpperCase.stream().forEach(System.out::println);
+```
+Aca mapea los elementos de la lista names y los pasa cada uno a mayuscula, y cada elemento lo recoge con collect y lo guarda en la lista namesUpperCase.
+
+**Lista**
+```java
+List<String> names = Arrays.asList("Ana", "Luis", "Oscar", "Maria", "Ana");
+```
+**Salida**
+```bash
+"ANA", "LUIS", "OSCAR", "MARIA", "ANA"
+```
+
+
+### Distinct - Operador No Final
+Elimina elementos duplicados de una colección. No recibe nada como argumento.
+```java
+names.stream().distinct().forEach(System.out::println);
+```
+
+**Lista**
+```java
+List<String> names = Arrays.asList("Ana", "Luis", "Oscar", "Maria", "Ana");
+```
+**Salida**
+```bash
+"Ana", "Luis", "Oscar", "Maria"
+```
+
+
+### Limit - Operador No Final
+Limita el número de elementos procesados. Recibe un entero como argumento (cantidad de elementos a procesar).
+```java
+names.stream().limit(3).forEach(System.out::println);
+```
+En este caso imprimira en pantalla los primeros 3 elementos.
+
+**Lista**
+```java
+List<String> names = Arrays.asList("Ana", "Luis", "Oscar", "Maria", "Ana");
+```
+**Salida**
+```bash
+"Ana", "Luis", "Oscar"
+```
+
+
+### Skip - Operador No Final
+Omite un número específico de elementos. Recibe un entero como argumento (cantidad de elementos a omitir).
+```java
+names.stream().skip(2).forEach(System.out::println);
+```
+En este caso imprimira todos los elementos menos los primeros 2.
+
+**Lista**
+```java
+List<String> names = Arrays.asList("Ana", "Luis", "Oscar", "Maria", "Ana");
+```
+**Salida**
+```bash
+"Oscar", "Maria", "Ana"
+```
+
+
+### AnyMatch - Operador Final
+Verifica algún elemento cumple con una condición. Recibe un [Predicate](#predicate) como argumento.
+```java
+boolean anyStartsWithJ = names.stream()
+    .anyMatch((name) -> name.startsWith("J"));
+
+System.out.println(anyStartsWithJ);
+```
+En este caso verifica si algun name comienza con la letra J.
+
+**Lista**
+```java
+List<String> names = Arrays.asList("Ana", "Luis", "Oscar", "Maria", "Ana");
+```
+**Salida**
+```bash
+false
+```
+
+
+### AllMatch - Operador Final
+Verifica si todos los elementos cumplen con la condición. Recibe un [Predicate](#predicate) como argumento.
+```java
+boolean todosInicianConA = names.stream()
+    .allMatch((name) -> name.startsWith("A"));
+
+System.out.println(todosInicianConA);
+```
+En este caso verifica que todos los names comienzen con la letra A.
+
+**Lista**
+```java
+List<String> names = Arrays.asList("Ana", "Luis", "Oscar", "Maria", "Ana");
+```
+**Salida**
+```bash
+false
+```
+
+
+### NoneMatch - Operador Final
+Verifica si ningún elemento cumple con una condición. Recibe un [Predicate](#predicate) como argumento.
+```java
+boolean ningunoEsDeTamaño10 = names.stream()
+    .noneMatch((name) -> name.length() == 10);
+
+    System.out.println(ningunoEsDeTamaño10);
+```
+En este caso verifica que ningún name sea de tamaño 10.
+
+**Lista**
+```java
+List<String> names = Arrays.asList("Ana", "Luis", "Oscar", "Maria", "Ana");
+```
+**Salida**
+```bash
+true
+```
+
+### FlatMap - Operador no Final
+Es utilizado para aplanar una secuencia de elementos en una sola secuencia, como por ejemplo Listas de Listas. Recibe un [Function](#function) como argumento.
+
+```java
+List<List<String>> listOfList = new ArrayList<>();
+
+List<String> list1 = List.of("Oscar", "Julio", "Eduardo");
+List<String> list2 = List.of("Jorge", "Martin", "Pedro");
+
+listOfList.add(list1);
+listOfList.add(list2);
+
+List<String> resultList = listOfList.stream()
+                            .flatMap(list -> list.stream())
+                            .toList();
+
+for (String string : resultList) {
+    System.out.println(string);
+}
+```
+Toma una lista que tiene dos listas de strings y la convierte en una sola lista de strings.
+
+**Lista**
+```java
+List<String> list1 = List.of("Oscar", "Julio", "Eduardo");
+List<String> list2 = List.of("Jorge", "Martin", "Pedro");
+```
+**Salida**
+```bash
+"Oscar", "Julio", "Eduardo", "Jorge", "Martin", "Pedro"
 ```
 
 # Spring Boot
