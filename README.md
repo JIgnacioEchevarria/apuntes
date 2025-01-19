@@ -2765,6 +2765,9 @@ public class AuthService {
 }
 ```
 
+# Spring Reactivo
+Programación Reactiva en Java.
+
 # Conceptos Backend
 ## Arquitecturas
 ### Monolitos y Microservicios
@@ -2870,6 +2873,7 @@ Se puede utilizar para reducir la latencia y mejorar las IOPS de muchas cargas d
 - Análisis en tiempo real.
 
 # POO - Programación Orientada a Objetos
+
 ## Encapsulamiento
 Significa reunir todos los elementos que pueden considerarse pertenecientes a una misma entidad, al mismo nivel de abstracción. Permite tres niveles de acceso:
 
@@ -3054,3 +3058,181 @@ public class Cuadrado extends Figura {
 }
 ```
 ## UML
+
+# Arquitecturas de software
+## Arquitectura Hexagonal
+Es un estilo arquitectónico para el diseño de software que tiene como objetivo lograr un sistema más modular, independiente y fácil de mantener.
+
+Su principal objetivos es separar la lógica de negocio (Núcleo de la aplicación) de sus mecanismos externos, como interfaces de usuario, bases de datos, APIs, sistemas externos, etc. Esto permite que el núcleo de la aplicación sea independiente y pueda ser reutilizado o probado fácilmente sin necesidad de depender de los detalles de la infraestructura.
+
+- Conocida como "Arquitectura de Puertos y Adaptadores"
+- Puertos: Interfaces
+- Adaptadores: Implementaciones de esas interfaces (Puertos)
+
+### Componentes
+1. **El núcleo de la aplicación (Lógica de negocio)**
+    - Contiene las reglas de negocio y la lógica central.
+    - Es independiente de cualquier tecnología externa.
+    - Definde puertos (interfaces) que repredentan los puntos de entrada y salida para interactuar con el núcleo.
+2. **Puertos**
+    - Son interfaces que definen las interacciones entre los núcleo de la aplicación y el mundo externo.
+    - Ejemplos de puertos:
+        - Entrada: Para recibir solicitudes (Como API REST o Eventos).
+        - Salida: Para comunicarse con sistemas externos (como bases de datos o servidores de terceros).
+
+3. **Adaptadores**:
+    - Son implementaciones de los puertos.
+    - Traducen las interacciones externas al lenguajes que el núcleo de la aplicación entiende y viceversa.
+    - Ejemplos de adaptadores:
+        - Adaptador de entrada: Un controlador HTTP o una interfaz de usuario.
+        - Adaptador de salida: Un repositorio para conectarse a una base de datos o un cliente HTTP para llamar a un servicio externo.
+
+4. **Hexágono**
+    - Representa el núcleo de la aplicación y sus puertos.
+    - Cada lado del hexágono puede tener un adaptador que interactúa con un puerto específico, lo que simboliza la idea de que la aplicación puede conectarse con múltiples sistemas externos de manera uniforme.
+
+### Arquitectura Hexagonal vs Arquitectura por capas
+![HexaVSCapas](./assets/arq-capas-vs-hexag.PNG)
+
+### Ventajas y Desventajas
+#### Ventajas
+- Separación de responsabilidades.
+- Fácil de testear y mantener.
+- Independencia tecnológica.
+
+#### Desventajas
+- Complejidad inicial en proyectos pequeños.
+- Puede requerir mayor esfuerzo en refactorización si se adopta en sistemas existentes.
+
+### Capas de Arquitectura Hexagonal
+- **Capa de Dominio**:
+    - En esta capa iran las clases que representan el dominio de la aplicación (Modelo), y la lógica de negocio. Como por ejemplo una clase Producto.
+    - En esta capa nada se relaciona con una base de datos o algo parecido, es independiente.
+- **Capa de Aplicación**:
+    - En esta capa van los casos de uso de la aplicación, las funcionalidades que tiene, por ejemplo Listar todos los productos, crear un producto, etc.
+- **Capa de infraestructura**:
+    - Esta capa contiene los controladores, repositorios de base de datos, conexiones con servicios externos, etc.
+
+### Ejemplo y Resumen de como estructurar la Arquitectura hexagonal.
+**Capa de Aplicación**
+
+![CapaAppHexagonalArq](./assets/capa_aplicacion_hexa.PNG)
+
+1. **Puertos de Entrada** (Input Ports)
+    
+    Los puertos de entrada definen las interfaces que la capa externa (como la interfaz de usuario o los controladores) puede usar para interactuar con la lógica de negocio. Son las entradas a la aplicación, es decir las operaciones que pueden ser invocadas desde el exterior.
+
+    Por ejemplo, si la aplicacióm tiene un servicio que gestiona turnos, un puerto de entrada puede ser una interface llamada AgendarTurnoUseCase.
+
+    **Características**:
+
+    - Son interfaces o contratos que definen lo que se puede hacer con la lógica de negocio.
+    - Su principal función es permitir que el sistema reciba solicitudes desde el exterior.
+    - No conocen ni dependen de los detalles de la implementación, solo definen el comportamiento deseado.
+
+2. **Puertos de Salida** (Output Ports)
+
+    Los puertos de salida definen las interfaces que la lógica de negocio necesita para interactuar con los servicios externos, como bases de datos, APIs de terceros, o cualquier otra infraestructura. Son las sálidas del sistema, ya que permiten que la aplicación se comunique con el mundo exterior.
+
+    Por ejemplo un puerto de salida podría ser una interface que defina un método como guardarTurno, que será implementado para interactuar con la base de datos.
+
+    **Características**:
+
+    - Son interfaces que definen lo que el sistema necesita de recursos externos.
+    - Permiten que la lógica de negocio se comunique con el exterior sin estar directamente acoplada a las implementaciones especificas.
+    - Ayudan a desacoplar la lógica de negocio de detalles técnicos, lo que facilita el reemplazo de implementaciones externas (Como cambiar la base de datos sin afectar la lógica de negocio).
+
+3. **Servicios** (Implementaciones de los Puertos de Entrada)
+
+    Los servicios son las implementaciones concretas de los puertos de entrada. En otras palabras, un servicio es el componente que recibe las solicitudes del exterior (desde el controlador o la interfaz de usuario) y ejecuta la lógica de negocio asociada a esos puertos de entrada.
+
+    Por ejemplo, si tenes un puerto de entrada llamado agendarTurno, el servicio implementará el comportamiento de este puerto: cómo validar los datos, cómo gestionar las reglas de negocio, y cómo invocar a los puertos de sálida (ej. como guardar el turno en la base de datos).
+
+    **Nota** Los controladores se comunican con los puertos de entrada (No directamente con la implementación el puerto(servicio)). Funciona de la siguiente manera:
+
+    - El controlador recibe una solicitud HTTP.
+    - Extrae los datos necesarios (por ejemplo, de los parámetros o el cuerpo de la solicitud).
+    - Llama a un método definido en el puerto de entrada.
+    - Una implementación del puerto de entrada (servicio) realiza el trabajo y devuelve el resultado.
+
+    **Ejemplo Completo de capa de aplicación**
+    
+    Si quiero almacenar archivos multimedia en una storage en la nube como Supabase, debo definir un puerto de sálida para interactuar con el servicio externo Supabase y llamarlo desde la implementación de un puerto de entrada. Las razones son:
+
+    - **Abstracción**: Al usar un puerto de salida, abstraes los detalles específicos de Supabase. Si decides cambiar de proveedor en el futuro (por ejemplo, a AWS S3), solo necesitas crear una nueva implementación del puerto de sálida (adaptador), sin afectar la lógica de negocio.
+    - **Flexibilidad**: Permite probar la lógica de negocio utilizando mocks o implementaciones en memoria en lugar de interactuar directamente con Supabase.
+
+    **Puerto de salida**
+    ```java
+    public interface AlmacenArchivosRepository {
+        String subirArchivo(String ruta, InputStream archivo) throws Exception;
+    }
+    ```
+
+    **Adaptador del puerto de salida en la capa de infraestructura**
+    ```java
+    public class SupabaseAlmacenArchivosAdapter implements AlmacenArchivosPort {
+         private final String SUPABASE_URL = "https://<tu-supabase-url>";
+        private final String SUPABASE_KEY = "<tu-supabase-key>";
+
+         @Override
+    public String subirArchivo(String ruta, InputStream archivo) throws Exception {
+        // Lógica para interactuar con Supabase
+        // (Usa la librería oficial de Supabase o una conexión HTTP personalizada)
+        byte[] contenido = archivo.readAllBytes();
+
+        // Ejemplo básico: simulación de subida
+        Files.write(Paths.get("/local/storage/" + ruta), contenido);
+
+        // Retornar la URL pública simulada
+        return SUPABASE_URL + "/storage/v1/object/public/" + ruta;
+    }
+    }
+    ```
+
+    **Puerto de entrada**
+    ```java
+    public interface GuardarArchivosUseCase {
+        String guardarArchivo(String ruta, InputStream archivo) throws Exception;
+    }
+    ```
+
+    **Servicio que implementa el puerto de entrada y utiliza el puerto de salida**
+    ```java
+    public class GuardarArchivosService implements GuardarArchivosUseCase {
+        private final AlmacenArchivosPort almacenArchivosPort;
+
+        public GuardarArchivosService(AlmacenArchivosPort almacenArchivosPort) {
+            this.almacenArchivosPort = almacenArchivosPort;
+        }
+
+        public String guardarArchivo(String ruta, InputStream archivo) throws Exception {
+            // Lógica de negocio antes de delegar al adaptador
+            if (ruta == null || archivo == null) {
+                throw new IllegalArgumentException("La ruta o el archivo no pueden ser nulos.");
+            }
+            return almacenArchivosPort.subirArchivo(ruta, archivo);
+        }
+    }
+    ```
+
+    **Controller**
+    ```java
+    @RestController
+    @RequestMapping("/api/archivos")
+    @RequiredArgsConstructor
+    public class ArchivosController {
+        private final GuardarArchivosUseCase guardarArchivosUseCase;
+
+        @PostMapping("/subir")
+        public ResponseEntity<String> subirArchivo(@RequestParam("ruta") String ruta,
+                                                @RequestParam("archivo") MultipartFile archivo) {
+            try {
+                String url = guardarArchivosUseCase.guardarArchivo(ruta, archivo.getInputStream());
+                return ResponseEntity.ok("Archivo subido con éxito: " + url);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body("Error subiendo el archivo: " + e.getMessage());
+            }
+        }
+    }
+    ```
