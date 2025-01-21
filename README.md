@@ -2188,6 +2188,76 @@ public class InvalidBookingException extends Exception {
 }
 ```
 
+## Asincronía
+### CompletableFuture
+Es una clase en Java que representa el resultado de una operación asíncrona. Permite realizar operaciones en segundo plano sin bloquear el hilo principal, lo que mejora la eficiencia de la aplicación.
+
+En lugar de hacer que el programa espere a que una operación se complete, CompletableFuture permite ejecutar la operación en un hilo separado y seguir trabajando en otras tareas mientras se completa.
+
+### allOf
+**CompletableFuture.allOf()** es un método que permite combinar multiples CompletableFuture en un solo CompletableFuture. La idea es que, en lugar de esperar que cada operación asíncrona termine por separado, puede esperar a que todas las operaciones se completen antes de proceder con la siguiente tarea.
+
+- allOf toma un array de CompletableFuture y devuelve un único CompletableFuture que se completa cuando todos los CompletableFuture originales se han completado.
+- Si alguno de los CompletableFuture falla (lanza una excepción), el CompletableFuture devuelto por allOf también fallará.
+
+```java
+List<CompletableFuture<Void>> futures = images.stream()
+    .map(fileStorageService::removeImage)
+    .collect(Collectors.toList());
+
+// Espera a que todas las eliminaciones de imágenes se completen
+CompletableFuture<Void> allRemovals = CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+```
+
+### thenRun
+Es un método que se usa para encadenar una acción adicional que debe ejcutarse después de que el CompletableFuture original se complete, sin depender del resultado de la operación asíncrona.
+
+- thenRun recibe una tarea (un Runnable) que se ejecuta cuando el CompletableFuture original se completa.
+- No importa el resultado de la operación anterior, thenRun solo se ejecuta cuando la tarea asíncrona ha terminado, sin tener acceso al resultado.
+
+```java
+allRemovals.thenRun(() -> {
+    // Este código se ejecutará después de que todas las imágenes se hayan eliminado
+    System.out.println("Todas las imágenes han sido eliminadas.");
+});
+```
+
+### thenAccept
+Se utiliza para manejar el resultado de una operación asíncrona. A diferencia de thenRun, que no tiene acceso al resultado de una operación, thenAccept te permite trabajar con el valor resultante de un CompletableFuture.
+
+- Recibe un Consumer y lo ejecuta cuando el CompletableFuture original se completa.
+- A diferencia de thenRun, tienes acceso al resultado de la operación asíncrona, por lo que puedes usarlo para hacer algo con ese valor.
+
+```java
+allRemovals.exceptionally(ex -> {
+    // Manejo de errores si alguna eliminación falla
+    System.out.println("Hubo un error eliminando las imágenes.");
+    return null;  // Devuelve un valor alternativo
+});
+```
+
+### exceptionally
+Es un método que se usa para manejar excepciones en el flujo asíncrono. Si algún CompletableFuture lanza una excepciuón, puede manejarla usando exceptionally.
+
+```java
+public void handleNewImages(Product product, List<byte[]> newImages) {
+    for (byte[] newImage : newImages) {
+        CompletableFuture<String> savedImage = fileStorageService.uploadImage(newImage, "productImages", "product_" + product.getId() + "_image_" + UUID.randomUUID());
+
+        savedImage.thenAccept(imageUrl -> {
+            // Aquí tienes acceso a la URL de la imagen guardada
+            product.getImages().add(imageUrl);
+            System.out.println("Imagen subida con éxito: " + imageUrl);
+        });
+
+        savedImage.thenRun(() -> {
+            // Este bloque se ejecuta después de que la imagen se haya guardado, pero no tiene acceso al resultado
+            System.out.println("La imagen ha sido procesada y almacenada.");
+        });
+    }
+}
+```
+
 # Spring Security
 - Es una herramienta del framework Spring y se utiliza en conjunto con Spring Boot, Spring Cloud, entre otros.
 - Es un marco de seguridad de nivel empresarial altamente personalizable para aplicaciones Java.
