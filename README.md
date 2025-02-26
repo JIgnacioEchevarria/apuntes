@@ -12,6 +12,8 @@ En este repositorio voy a tener todos los apuntes de diferentes tecnologías est
 - [ConceptosBackend](#conceptos-backend)
 - [BasesDeDatos](#bases-de-datos)
 - [POO](#poo---programación-orientada-a-objetos)
+- [Arquitecturas De Software](#arquitecturas-de-software)
+- [Seguridad](#seguridad)
 
 # NodeJS
 
@@ -3306,3 +3308,83 @@ Su principal objetivos es separar la lógica de negocio (Núcleo de la aplicaci�
         }
     }
     ```
+
+# Seguridad
+## SSRF
+Server-Side Request Forgery, es un tipo de vulnerabilidad de seguridad en la que un atacante puede hacer que el servidor realice solicitudes no autorizadas en su nombre. El atacante manipula las solicitudes HTTP que el servidor realiza, aprovechando que el servidor puede acceder a recursos internos o externos que el atacante no podría directamente.
+
+### ¿Cómo funciona?
+El atacante proporciona una URL que el servidor debe procesar. Si el servidor no valida correctamente esa URL (o la procesa sin restricciones), el atacante puede hacer que el servidor haga solicitudes a recursos internos de la red (como bases de datos internas, servicios internos de la red local, o incluso sistemas que requieren autenticación).
+
+### Ejemplo
+Suponiendo que tenemos un servicio en el backend donde los usuarios pueden proporcionar una URL para que el sistema obtenga una imagen y la almacene. Si el Backend no valida correctamente la URL, un atacante podría enviar una URL que apunte a un recurso interno como:
+- http://localhost/admin (para acceder a servicios internos del servidor)
+- http://127.0.0.1:3306 (para intentar acceder a una base de datos interna)
+- http://internal-service.local (para atacar un servicio que solo es accesible desde dentro de la red interna)
+
+### ¿Cómo protegerse contra SSRF?
+1. **Validar las URLs de entrada**: Asegurarse de que las URLs proporcionadas por los usuarios apunten solo a dominios específicos que hayas autorizado (como el dominio de supabase por ejemplo).
+2. **Deshabilitar las solicitudes a direcciones locales**: Si tu sistema no necesita hacer solicitudes a localhost o 127.0.0.1, bloque esas solicitudes explícitamente.
+3. **Limitar los puertos y protocolos**: Restringe los puertos y protocolos que pueden ser utilizados en las URLs (por ejemplo, solo permitir HTTP/HTTPS y bloquear puertos como el 3306, que es utilizado por MySQL).
+4. **Uso de cabeceras de seguridad**: Algunas herramientas y bibliotecas permiten especificar cabeceras para limitar las solicitudes salientes a dominios seguros.
+
+### Ejemplo clase utilitaria para validar URLs proporcionadas por un cliente
+```java
+package com.app.infrastructure.shared.domain.util;
+
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
+
+public class UrlValidator {
+    private UrlValidator() {}
+
+    private static final List<String> ALLOWED_DOMAINS = Arrays.asList("supabase.io");
+    private static final List<Integer> ALLOWED_PORTS = Arrays.asList(80, 443);
+
+    public static boolean isValidImageUrl(String url) {
+        return url.endsWith(".jpg") || url.endsWith(".png") || !url.endsWith(".gif");
+    }
+
+    public static boolean isAllowedDomain(String url) {
+        try {
+            URL parsedUrl = new URL(url);
+            String host = parsedUrl.getHost();
+            return ALLOWED_DOMAINS.contains(host);
+        } catch (MalformedURLException e) {
+            return false;
+        }
+    }
+
+    public static boolean isAllowedPort(String url) {
+        try {
+            URL parsedUrl = new URL(url);
+            int port = parsedUrl.getPort();
+
+            if (port == -1) {
+                port = parsedUrl.getProtocol().equals("http") ? 80 : 443;
+            }
+
+            return ALLOWED_PORTS.contains(port);
+        } catch (MalformedURLException e) {
+            return false;
+        }
+    }
+
+    public static boolean isUrlRedirecting(String url) {
+        try {
+            URL parsedUrl = new URL(url);
+            HttpURLConnection connection = (HttpURLConnection) parsedUrl.openConnection();
+            connection.setInstanceFollowRedirects(false);
+            connection.setRequestMethod("HEAD");
+
+            int responseCode = connection.getResponseCode();
+            return (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+}
+```
